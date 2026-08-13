@@ -1,0 +1,7 @@
+# Build inputs contain the full plaintext freeform source and the unencrypted app shell.
+# They must never be pushed — the repo/site only ever carries ciphertext.
+build/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
