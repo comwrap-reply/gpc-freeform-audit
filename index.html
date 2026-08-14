@@ -212,7 +212,8 @@ body.locked main,body.locked header,body.locked nav{visibility:hidden}
   <button role="tab" data-pane="selectors" aria-selected="false">Selectors<span class="count" id="c-sel"></span></button>
   <button role="tab" data-pane="frags" aria-selected="false">XF fragments<span class="count" id="c-frag"></span></button>
   <button role="tab" data-pane="gp" aria-selected="false">GP pages<span class="count" id="c-gp"></span></button>
-  <button role="tab" data-pane="flags" aria-selected="false">⚑ Flagged &amp; notes<span class="count hot" id="c-flags">0</span><span class="count" id="c-legacy"></span></button>
+  <button role="tab" data-pane="flags" aria-selected="false">⚑ Flagged &amp; notes<span class="count hot" id="c-flags">0</span></button>
+  <button role="tab" data-pane="legacy" aria-selected="false">Legacy<span class="count" id="c-legacy"></span></button>
 </nav>
 
 <main>
@@ -277,15 +278,17 @@ body.locked main,body.locked header,body.locked nav{visibility:hidden}
     </div>
     <p class="hint" style="margin-bottom:14px">Flags and notes auto-save to this browser (localStorage), keyed by node path, and carry a snapshot of the freeform's source so an annotation stays readable even after the freeform leaves the export. Exports are encrypted with the same credentials as this page — the committed file is unreadable without them. To publish a shared baseline: export, commit the file as <span class="mono">querybuilder.json</span> next to this page in the GitHub Pages repo — the tool loads it on startup and merges with local changes by timestamp. Refreshing <span class="mono">freeforms.json</span> never touches it.</p>
     <div id="flaglist"></div>
+  </section>
+
+  <section class="pane" id="pane-legacy">
     <div id="legacywrap" style="display:none">
-      <div class="subhead">
-        <h3>Legacy</h3>
+      <div class="savebar">
         <span class="tag" id="legacycount"></span>
         <button class="btn delbtn" id="legacyClear">Delete all legacy</button>
       </div>
-      <p class="hint" style="margin-bottom:8px">Notes and flagged code from freeforms that are <b>no longer in the export</b> — deleted, moved, or renamed in AEM since you annotated them. The source below is the snapshot taken when you flagged or noted it, not live content. Nothing here is ever removed automatically: use <b>Delete</b> on an entry once you are done with it, and note that its snapshot is the last copy of that source.</p>
-      <div id="legacylist"></div>
+      <p class="hint" style="margin-bottom:14px">Notes and flagged code from freeforms that are <b>no longer in the export</b> — deleted, moved, or renamed in AEM since you annotated them. The source below is the snapshot taken when you flagged or noted it, not live content. Nothing here is ever removed automatically: use <b>Delete</b> on an entry once you are done with it, and note that its snapshot is the last copy of that source.</p>
     </div>
+    <div id="legacylist"></div>
   </section>
 </main>
 
@@ -542,10 +545,10 @@ function normalize(raw){
 function snapshot(p){
   if(!has(p)) return null;
   const it=ITEMS[p];
-  let text=it.text||'', trunc=false;
-  if(text.length>SNAP_CAP){ text=text.slice(0,SNAP_CAP); trunc=true; }
-  return {text, page:it.page||'', scope:it.scope||'', family:it.family||null,
-          seen:todayISO(), trunc};
+  /* Store the full source — snapshots are no longer capped, so a legacy item
+     keeps the complete freeform even after it leaves the export. */
+  return {text: it.text||'', page:it.page||'', scope:it.scope||'', family:it.family||null,
+          seen:todayISO(), trunc:false};
 }
 /* Keep snapshots current while the freeform is still in the export, so `seen`
    means "last confirmed present". This never bumps ts: ts arbitrates flag/note
@@ -658,7 +661,7 @@ function setStatus(t){ document.getElementById('saveStatus').textContent = t; }
 function syncCounts(){
   const nOrphan = orphans().length;
   document.getElementById('c-flags').textContent = liveAnnotated().length;
-  document.getElementById('c-legacy').textContent = nOrphan ? '+'+nOrphan+' legacy' : '';
+  document.getElementById('c-legacy').textContent = nOrphan ? nOrphan : '';
 }
 function refreshFlagUI(){
   document.querySelectorAll(`[data-flag]`).forEach(b=>{
@@ -813,8 +816,8 @@ function renderStaleBar(){
 document.addEventListener('click', e=>{
   if(!e.target.closest('[data-legacyjump]')) return;
   e.preventDefault();
-  document.querySelector('[data-pane=flags]').click();
-  document.getElementById('legacywrap').scrollIntoView({block:'start'});
+  document.querySelector('[data-pane=legacy]').click();
+  document.getElementById('legacylist').scrollIntoView({block:'start'});
 });
 
 /* ---------- highlighting (ATTR_RE / BLOCK_RE / SP_RE live in the model above) ---------- */
@@ -1142,7 +1145,10 @@ function renderLegacyTab(){
   wrap.style.display = items.length ? 'block' : 'none';
   document.getElementById('legacycount').textContent =
     items.length ? `${items.length} freeform${items.length>1?'s':''} no longer in the export` : '';
-  if(!items.length){ el.innerHTML=''; return; }
+  if(!items.length){
+    el.innerHTML='<div class="empty"><b>No legacy items</b>Nothing you have flagged or noted is missing from the current export. An entry appears here only after its freeform leaves <span class="mono">freeforms.json</span> — its note and source snapshot are kept so they stay readable.</div>';
+    return;
+  }
   const dead='This path was not in the last export — the link probably 404s';
   el.innerHTML=items.map(([p,v])=>{
     const s=v.snap;
