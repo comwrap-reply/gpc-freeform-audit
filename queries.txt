@@ -1,0 +1,113 @@
+Freeform Style Audit — source query
+===================================
+
+This is the AEM QueryBuilder request that produces the audit's raw data. Run it whenever
+you want fresh content, save the response over build/raw/freeform.json, and rebuild the
+data files (see README, "Refreshing the data").
+
+
+THE QUERY
+---------
+
+Prefix it with the host or IP of the environment you want to read, then paste the whole
+thing into a browser tab:
+
+  <environment host or IP>/bin/querybuilder.json?type=nt:unstructured&property=sling:resourceType&property.value=global/components/content/freeform&group.p.or=true&group.1_path=/content/georgia-power&group.2_path=/content/experience-fragments/georgiapower&p.limit=-1&p.hits=selective&p.properties=jcr:path%20text
+
+Use an AUTHOR environment, not publish. Author holds unpublished and draft pages, and the
+point of the audit is to catch inline styling before it ships, so the wider net is the
+right one. Publish would silently hide anything not yet activated.
+
+
+HOW TO RUN IT
+-------------
+
+1. Log in to that author environment in your browser first. QueryBuilder authenticates
+   with your normal session cookie, so there is nothing to configure — but an anonymous
+   request returns an empty or partial result rather than an error, which is the usual
+   reason a fresh export comes back suspiciously small.
+
+2. Paste the prefixed URL into a tab in that same browser and let it finish. It returns
+   JSON, a few megabytes of it, so the tab may sit for several seconds.
+
+3. Save the response as build/raw/freeform.json (Save Page As, or right-click → Save).
+   Do not reformat or pretty-print it; the build reads it as-is.
+
+4. Sanity check the top of the file before rebuilding:
+
+     "success": true      the query ran
+     "results": 3826      how many freeforms came back — compare with last time
+     "more": false        nothing was truncated
+
+   If "more" is true, the limit was applied and you are missing rows: confirm
+   p.limit=-1 survived the copy/paste.
+
+To experiment with the predicates interactively, use the QueryBuilder debugger on the same
+environment: /libs/cq/search/content/querydebug.html
+
+
+WHY EACH PARAMETER IS THERE
+---------------------------
+
+type=nt:unstructured
+  Component nodes under a page's jcr:content are nt:unstructured. Naming the node type
+  keeps the traversal narrow and fast; without it the query considers every node type in
+  both trees.
+
+property=sling:resourceType
+property.value=global/components/content/freeform
+  This pair is what actually selects freeforms: every instance of the component carries
+  that resource type. It is an exact match, so a renamed or proxied component would not be
+  found — worth remembering if the component ever moves.
+
+group.p.or=true
+group.1_path=/content/georgia-power
+group.2_path=/content/experience-fragments/georgiapower
+  Two subtrees to search: Georgia Power pages, and Georgia Power Experience Fragments.
+  The group.p.or=true is load-bearing. Predicates in a group are ANDed by default, and no
+  node can live under both paths at once, so without it the query returns nothing at all.
+  Widen group.2_path to /content/experience-fragments if you ever want every XF brand; the
+  build filters XFs down to the georgiapower brand regardless, so the broader path is
+  harmless but slower.
+
+p.limit=-1
+  No cap. The default is 10, which is the other classic way to end up with a tiny export.
+
+p.hits=selective
+p.properties=jcr:path%20text
+  Return only the two properties the audit needs instead of a full dump of every node.
+  This is the difference between a ~7 MB response and an enormous one. The %20 is the
+  URL-encoded space separating the two property names — keep it encoded, since a literal
+  space in a query string gets mangled by some clients.
+
+  jcr:path  the node's full repository path. This is the audit's identity for a freeform:
+            it is unique, and it is what flags, notes and snapshots are keyed by, which is
+            why refreshing this data does not lose your annotations.
+  text      the freeform's rich-text property — the HTML the audit scans for style
+            attributes, <style> blocks and spacing declarations.
+
+
+WHAT THE BUILD DOES WITH IT
+---------------------------
+
+build.py reads the hits array, keeps anything under /content/georgia-power or
+/content/experience-fragments/georgiapower, and writes two encrypted files: freeforms.json
+(the source, keyed by jcr:path) and analysis.json (the derived spacing patterns and
+selectors, which reference those same paths).
+
+Because everything is keyed by jcr:path, a re-query is safe: freeforms that still exist
+reattach to their flags and notes, freeforms that have been deleted or renamed in AEM move
+into the tool's Legacy section with the snapshot taken when they were annotated, and newly
+added freeforms simply appear. Nothing points at a row number, so nothing drifts.
+
+
+NOTES
+-----
+
+- The response is plaintext page source. build/ is gitignored for that reason — the
+  repo only ever carries the encrypted output. Don't commit the raw export.
+- Counts drifting by a handful between exports is normal (authors add and remove
+  freeforms). A large drop usually means an auth or path problem, not a content change.
+- The query has no date or version filter, so it always returns current content. There is
+  no way to ask AEM for "what this looked like last month" — the Legacy section's
+  snapshots are the only history the audit keeps.

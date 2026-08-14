@@ -5,11 +5,15 @@ instance across Georgia Power pages (`/content/georgia-power`) and Georgia Power
 Experience Fragments (`/content/experience-fragments/georgiapower`), focused on inline
 styling and spacing overrides (padding / margin / gap).
 
-The tool is a single static HTML file. All fragment source, page content, and author
-paths are embedded **AES-256-GCM encrypted**; the decryption key is derived from the
-login credentials (PBKDF2, 310k iterations), so the file is safe to host on a public
-GitHub Pages URL. Credentials are distributed out-of-band — never commit them to this
-repo, this README, or any issue/PR.
+The site is a small static app plus two encrypted data files. All fragment source, page
+content, and author paths are **AES-256-GCM encrypted**; the decryption key is derived
+from the login credentials (PBKDF2, 310k iterations), so the files are safe to host on a
+public GitHub Pages URL. Credentials are distributed out-of-band — never commit them to
+this repo, this README, or any issue/PR.
+
+Everything is keyed by `jcr:path`, which is unique and stable per freeform. That is the
+whole design: you can re-run the AEM query and replace the data at will without breaking
+your flags and notes, and without rebuilding `index.html`.
 
 ## What's in the tool
 
@@ -25,20 +29,26 @@ repo, this README, or any issue/PR.
   freeform on it with the same viewer, links, and lens.
 - **Flagged & notes** — flag any freeform and attach notes from anywhere in the tool;
   build a working set for remediation / EDS migration review.
+- **Legacy** — notes and flagged code for freeforms that are no longer in the export.
+  Annotating a freeform snapshots its source, so when it is later deleted, moved, or
+  renamed in AEM the note keeps the code it was about. Nothing here is ever removed
+  automatically.
 
 ## Repo layout
 
 | Path | Committed? | What it is |
 |---|---|---|
-| `index.html` | ✅ push | The built, encrypted tool. This is the whole deployed site. |
-| `flags.json` | ✅ push (optional) | Encrypted shared baseline of flags + notes. Created by the Export button in the tool. |
-| `README.md` | ✅ push | This file. |
-| `.gitignore` | ✅ push | Keeps the build inputs out of the repo. |
-| `build/` | ❌ keep local | Everything needed to rebuild `index.html`. **Never push** — `querybuilder.json` contains all freeform source in plaintext, and `template.html` is the unencrypted app shell. |
+| `index.html` | ✅ push | The app shell plus a small credential sentinel. No content, ~60 KB. Only changes when the template or the credentials change. |
+| `freeforms.json` | ✅ push | Freeform source keyed by `jcr:path`, encrypted + gzipped (~1.1 MB). Replace this to refresh the data. |
+| `analysis.json` | ✅ push | Derived spacing analysis (patterns, selectors, per-freeform counts), referencing paths only. Regenerated alongside `freeforms.json`. |
+| `querybuilder.json` | ✅ push (optional) | Encrypted shared baseline of flags, notes, and source snapshots, keyed by `jcr:path`. Written by the Export button in the tool — never by the build. |
+| `queries.txt` | ✅ push | The AEM QueryBuilder request that produces the raw data, with how to run it and why each parameter is there. |
+| `README.md` / `.gitignore` | ✅ push | This file, and the rule that keeps build inputs out of the repo. |
+| `build/` | ❌ keep local | Everything needed to rebuild, including how-to-run docs at the top of `build.py`. **Never push** — `raw/freeform.json` is the QueryBuilder export in plaintext, `template.html` is the unencrypted app shell, and `build.py` holds the login. |
 
 ## Deploying
 
-1. Push `index.html` (plus this README / .gitignore) to the repo.
+1. Push `index.html`, `freeforms.json`, `analysis.json` (plus this README / .gitignore).
 2. Repo → Settings → Pages → deploy from branch → `main`, root (`/`).
 3. The site serves at `https://<user>.github.io/<repo>/`.
 
@@ -47,55 +57,92 @@ repo, this README, or any issue/PR.
 > the URL being public is fine — the content is ciphertext without the credentials. A
 > private repo additionally protects the encrypted files at the source and is preferred.
 
-## Flags & notes workflow
+## Refreshing the data
 
-- Flags and notes auto-save to the **browser's localStorage** on every change (plaintext,
-  local to your machine, per-origin — the Pages URL and a local file: URL keep separate state).
-- To publish a shared baseline: **Flagged & notes → Export flags.json**, then commit the
-  downloaded file to the repo root next to `index.html`. On load, the tool fetches it,
-  decrypts it with the session key, and merges with local changes (newer timestamp wins
-  per item, including un-flags).
-- The exported file is encrypted with the same credentials as the page — safe to commit.
-  Legacy plaintext flags.json files are still accepted on load/import for migration.
+1. Re-run the QueryBuilder export on author and save it over `build/raw/freeform.json`.
+   The query, how to run it, and what every parameter is for live in
+   [`queries.txt`](queries.txt) — that file is the canonical copy, so it does not drift
+   from this README.
 
-## Rebuilding `index.html` (local only)
-
-When content changes or you want fresh data:
-
-1. Re-run the QueryBuilder export on author and save it over `build/querybuilder.json`:
-
-   ```
-   /bin/querybuilder.json?type=nt:unstructured&property=sling:resourceType&property.value=global/components/content/freeform&group.p.or=true&group.1_path=/content/georgia-power&group.2_path=/content/experience-fragments&p.limit=-1&p.hits=selective&p.properties=jcr:path text
-   ```
-
-   (The build filters XFs to the `georgiapower` brand itself, so the broader XF path in
-   the query is fine.)
-
-2. Build:
+2. Rebuild the data only — `index.html` is not touched, so the deployed app and its
+   PBKDF2 salt stay exactly as they are:
 
    ```bash
    cd build
-   pip install -r requirements.txt
-   python build.py --user <username> --password '<password>'
+   pip install -r requirements.txt      # once
+   python3 build.py --data-only
    ```
 
-   This writes `../index.html`. Commit and push it.
+   No credentials on the command line: they live in the `CREDENTIALS` block at the top
+   of `build.py`, which also documents how to change them. `--user` / `--password` (or
+   `FF_AUDIT_USER` / `FF_AUDIT_PASSWORD`) override them for a single run. The build
+   prints which source it used, so you can confirm before pushing.
 
-3. **Flags caveat after a rebuild:** every build generates a fresh PBKDF2 salt, so a
-   `flags.json` exported from the *previous* build will not decrypt in the new one.
-   Your localStorage flags are unaffected and merge automatically — open the new build,
-   confirm the Flagged tab looks right, re-export, and commit the new `flags.json`.
+3. Commit the two regenerated JSON files. Your `querybuilder.json` keeps working: it is
+   keyed by `jcr:path`, so flags and notes reattach to the same freeforms, and anything
+   that dropped out of the new export moves into the Legacy section with the snapshot
+   taken when you annotated it.
+
+Drop `--data-only` when you have also changed `template.html` and want a new `index.html`.
+That reuses the existing salt as long as the credentials still unlock the current
+`index.html`, so an exported `querybuilder.json` keeps decrypting. Pass `--rotate-salt`
+only when you intend to invalidate it.
+
+The build prints which of those two happened; the last line is either
+`salt reused from index.html` or `NEW salt minted`.
+
+## Flags, notes & the Legacy section
+
+- Flags and notes auto-save to the **browser's localStorage** on every change (plaintext,
+  local to your machine, per-origin — the Pages URL and a local file: URL keep separate state).
+- Annotating a freeform also snapshots its source (capped at 40 KB), refreshed on load
+  while the freeform is still in the export. That snapshot is what the Legacy section
+  renders once the path disappears from `freeforms.json`.
+- To publish a shared baseline: **Flagged & notes → Export querybuilder.json**, then commit
+  the downloaded file to the repo root. On load, the tool fetches it, decrypts it with the
+  session key, and merges with local changes. Merging is per field: the newer timestamp
+  wins for the flag and the note, and a snapshot is never dropped just because the other
+  side lacks one.
+- A `flags.json` from an older build is still read on load and on import, so an existing
+  committed baseline migrates by itself. You can delete it once you have exported
+  `querybuilder.json`.
+- Nothing is pruned automatically. Each legacy entry has its own **Delete**, and the
+  section header has **Delete all legacy** for clearing a batch once you are done with
+  them; both confirm first, and both point out that the snapshot is the last copy of
+  source that is no longer in AEM. Live flags and notes are never touched by either. If a
+  path reappears in a later export the entry leaves the Legacy section on its own.
+- If the browser runs out of storage, the tool sheds snapshots it can rebuild from
+  `freeforms.json` first and tells you; an orphan's snapshot is the last copy and is
+  never shed.
+
+## Running it locally
+
+The data files are fetched at runtime, and browsers block `fetch` between `file://`
+pages, so serve the folder instead:
+
+```bash
+cd <repo root> && python3 -m http.server 8000   # then open http://localhost:8000/
+```
+
+Opening `index.html` straight off disk still works: the unlock screen notices the fetch
+failed and offers a file picker for `freeforms.json` and `analysis.json`.
 
 ## Rotating credentials
 
-Rebuild with the new `--user` / `--password` and push the new `index.html`. Old
-credentials stop working immediately (they can no longer derive the key). Then follow
-the flags caveat above to re-export `flags.json` under the new credentials.
+Edit the `CREDENTIALS` block at the top of `build/build.py`, run a full build (no
+`--data-only`), and push the new `index.html` plus the two data files. Old credentials stop
+working immediately (they can no longer derive the key).
+A new salt is minted in this case, so a `querybuilder.json` exported under the old
+credentials will not decrypt — your localStorage copy is plaintext and merges
+automatically, so open the new build once, confirm the Flagged and Legacy sections look
+right, then re-export and commit.
 
 ## Security model (honest version)
 
-- The payload and flags.json are real ciphertext — there is nothing readable in the
-  repo or on the wire without the credentials.
+- The data files and `querybuilder.json` are real ciphertext — there is nothing readable
+  in the repo or on the wire without the credentials.
+- `querybuilder.json` contains freeform source for every path you annotated, so treat it
+  as exactly as sensitive as the data files. It stays encrypted for that reason.
 - Anyone with the URL **and** the credentials has everything; treat the password like
   the content itself.
 - Because the ciphertext is public, offline brute-force against a weak password is

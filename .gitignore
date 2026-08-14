@@ -1,6 +1,11 @@
 # Build inputs contain the full plaintext freeform source and the unencrypted app shell.
 # They must never be pushed — the repo/site only ever carries ciphertext.
+# (This covers build/raw/freeform.json, the QueryBuilder export.)
 build/
+
+# The deploy root's JSON files are ciphertext and ARE meant to be committed:
+#   freeforms.json  analysis.json  querybuilder.json
+# Do not add a *.json rule here.
 
 # OS / editor noise
 .DS_Store
