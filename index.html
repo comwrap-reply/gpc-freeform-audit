@@ -10,6 +10,9 @@
   --text:#e8eaf0; --dim:#8b93a5; --faint:#5b6272;
   --amber:#f5b83d; --coral:#ff7a76; --violet:#b78cff; --teal:#4dd6c1; --flag:#ffd166;
   --amber-bg:rgba(245,184,61,.12); --coral-bg:rgba(255,122,118,.12); --violet-bg:rgba(183,140,255,.12);
+  /* CSS-property category palette (spacing keeps amber; mirrors categorize()) */
+  --c-spacing:#f5b83d; --c-layout:#6ea8ff; --c-sizing:#4dd6c1; --c-type:#ff9ecb;
+  --c-color:#8fd96b; --c-effect:#ffb27a; --c-other:#9aa3b5;
   --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --sans:Inter,-apple-system,"Segoe UI",system-ui,sans-serif;
 }
@@ -70,6 +73,9 @@ tr.row[aria-expanded=true] td{background:var(--panel);border-bottom-color:transp
 tr[aria-expanded=true] .caret{transform:rotate(90deg)}
 .inst{background:var(--panel);border-bottom:1px solid var(--line)}
 .inst td{padding:0 12px 14px 26px}
+.gpinst{margin-top:8px}
+.pagegrp{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.pagegrp>.cpath{font-family:var(--mono);font-size:11px;color:var(--faint);margin-bottom:2px}
 
 .icard{border:1px solid var(--line);border-radius:7px;background:var(--panel2);padding:10px 14px;margin-top:8px}
 .icard.flagged{border-color:var(--flag)}
@@ -81,7 +87,16 @@ tr[aria-expanded=true] .caret{transform:rotate(90deg)}
 mark{background:var(--amber-bg);color:var(--amber);border-radius:2px;padding:0 1px}
 mark.attr{background:var(--coral-bg);color:var(--coral)}
 mark.block{background:var(--violet-bg);color:var(--violet)}
-mark.q{background:rgba(77,214,193,.18);color:var(--teal)}
+/* per-declaration category colour, composed inside the attr/block region tints */
+mark.c-spacing{color:var(--c-spacing)}mark.c-layout{color:var(--c-layout)}
+mark.c-sizing{color:var(--c-sizing)}mark.c-type{color:var(--c-type)}
+mark.c-color{color:var(--c-color)}mark.c-effect{color:var(--c-effect)}
+mark.c-other{color:var(--c-other)}
+/* in-source risk markers */
+u.r-imp{text-decoration:underline dotted var(--coral);text-underline-offset:2px}
+u.r-neg{text-decoration:underline wavy var(--coral);text-underline-offset:2px}
+/* search hit: outline so it never collides with a category hue */
+mark.q{background:transparent;color:inherit;box-shadow:inset 0 0 0 1px var(--teal);border-radius:3px}
 
 .flagbtn{font-family:var(--mono);font-size:11px;padding:2px 9px;border-radius:4px;border:1px solid var(--line);color:var(--faint)}
 .flagbtn:hover{border-color:var(--flag);color:var(--flag)}
@@ -110,6 +125,34 @@ mark.q{background:rgba(77,214,193,.18);color:var(--teal)}
 .b.block{background:var(--violet-bg);color:var(--violet)}
 .b.sp{background:var(--amber-bg);color:var(--amber)}
 .b.ff{background:rgba(77,214,193,.12);color:var(--teal)}
+/* category badge + dot, coloured from the palette via a data attribute */
+.b.cat{background:rgba(255,255,255,.06)}
+.b.cat[data-cat=spacing]{color:var(--c-spacing)}.b.cat[data-cat=layout]{color:var(--c-layout)}
+.b.cat[data-cat=sizing]{color:var(--c-sizing)}.b.cat[data-cat=type]{color:var(--c-type)}
+.b.cat[data-cat=color]{color:var(--c-color)}.b.cat[data-cat=effect]{color:var(--c-effect)}
+.b.cat[data-cat=other]{color:var(--c-other)}
+.catdot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.catdot[data-cat=spacing]{background:var(--c-spacing)}.catdot[data-cat=layout]{background:var(--c-layout)}
+.catdot[data-cat=sizing]{background:var(--c-sizing)}.catdot[data-cat=type]{background:var(--c-type)}
+.catdot[data-cat=color]{background:var(--c-color)}.catdot[data-cat=effect]{background:var(--c-effect)}
+.catdot[data-cat=other]{background:var(--c-other)}
+/* scope segmented control */
+.segmented{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.segmented .seg{padding:6px 12px;font-family:var(--mono);font-size:11.5px;color:var(--dim);border-right:1px solid var(--line)}
+.segmented .seg:last-child{border-right:none}
+.segmented .seg:hover{color:var(--text)}
+.segmented .seg.on{background:var(--amber);color:#14171c;font-weight:650}
+/* category chips carry their own colour when active */
+.chip.cat.on[data-cat=spacing]{border-color:var(--c-spacing);color:var(--c-spacing);background:rgba(245,184,61,.12)}
+.chip.cat.on[data-cat=layout]{border-color:var(--c-layout);color:var(--c-layout);background:rgba(110,168,255,.12)}
+.chip.cat.on[data-cat=sizing]{border-color:var(--c-sizing);color:var(--c-sizing);background:rgba(77,214,193,.12)}
+.chip.cat.on[data-cat=type]{border-color:var(--c-type);color:var(--c-type);background:rgba(255,158,203,.12)}
+.chip.cat.on[data-cat=color]{border-color:var(--c-color);color:var(--c-color);background:rgba(143,217,107,.12)}
+.chip.cat.on[data-cat=effect]{border-color:var(--c-effect);color:var(--c-effect);background:rgba(255,178,122,.12)}
+.chip.cat.on[data-cat=other]{border-color:var(--c-other);color:var(--c-other);background:rgba(154,163,181,.14)}
+.chip.risk.on{border-color:var(--coral);color:var(--coral);background:var(--coral-bg)}
+.filtbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 14px}
+.filtbar .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-right:2px}
 .viewer{border:1px solid var(--line);border-radius:8px;background:var(--panel);min-height:300px;position:sticky;top:60px;max-height:80vh;overflow-y:auto}
 .vhead{padding:14px 16px;border-bottom:1px solid var(--line)}
 .vhead .name{font-weight:650;font-size:15px;word-break:break-all}
@@ -117,9 +160,18 @@ mark.q{background:rgba(77,214,193,.18);color:var(--teal)}
 .toggle{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--dim);cursor:pointer;user-select:none}
 .toggle input{accent-color:var(--amber)}
 .src{font-family:var(--mono);font-size:12px;line-height:1.6;padding:14px 16px;white-space:pre-wrap;word-break:break-all;color:var(--text)}
+/* category lens: dim everything, then re-light only the chosen category */
 .lens .src{color:var(--faint)}
-.lens mark.attr,.lens mark.block{background:transparent;color:var(--faint)}
-.lens mark.sp{background:var(--amber-bg);color:var(--amber);font-weight:600}
+.lens mark.attr,.lens mark.block{background:transparent}
+.lens mark[class*="c-"]{color:var(--faint)}
+.lens.lens-spacing mark.c-spacing{color:var(--c-spacing);background:var(--amber-bg);font-weight:600}
+.lens.lens-layout mark.c-layout{color:var(--c-layout);background:rgba(110,168,255,.12);font-weight:600}
+.lens.lens-sizing mark.c-sizing{color:var(--c-sizing);background:rgba(77,214,193,.12);font-weight:600}
+.lens.lens-type mark.c-type{color:var(--c-type);background:rgba(255,158,203,.12);font-weight:600}
+.lens.lens-color mark.c-color{color:var(--c-color);background:rgba(143,217,107,.12);font-weight:600}
+.lens.lens-effect mark.c-effect{color:var(--c-effect);background:rgba(255,178,122,.12);font-weight:600}
+.lens.lens-other mark.c-other{color:var(--c-other);background:rgba(154,163,181,.14);font-weight:600}
+.lenssel{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 8px;font:inherit;font-size:12px}
 .ffsec{border-bottom:1px solid var(--line)}
 .ffsec:last-child{border-bottom:none}
 .ffhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 16px;background:#1a1e26;border-bottom:1px solid #232833;position:sticky;top:41px;z-index:1}
@@ -201,14 +253,17 @@ body.locked main,body.locked header,body.locked nav{visibility:hidden}
   <div class="legend">
     <span><span class="dot" style="background:var(--coral)"></span> style="…" attribute</span>
     <span><span class="dot" style="background:var(--violet)"></span> &lt;style&gt; block</span>
-    <span><span class="dot" style="background:var(--amber)"></span> spacing (padding / margin / gap)</span>
     <span><span class="dot" style="background:var(--flag)"></span> flagged</span>
+  </div>
+  <div class="legend" id="catlegend"></div>
+  <div class="legend">
+    <span><u class="r-imp">!important</u> &nbsp;<u class="r-neg">-1em</u> negative — marked in source</span>
   </div>
   <div class="stats" id="stats"></div>
 </header>
 
 <nav role="tablist" id="tabs">
-  <button role="tab" data-pane="patterns" aria-selected="true">Spacing patterns<span class="count" id="c-pat"></span></button>
+  <button role="tab" data-pane="patterns" aria-selected="true">Style patterns<span class="count" id="c-pat"></span></button>
   <button role="tab" data-pane="selectors" aria-selected="false">Selectors<span class="count" id="c-sel"></span></button>
   <button role="tab" data-pane="frags" aria-selected="false">XF fragments<span class="count" id="c-frag"></span></button>
   <button role="tab" data-pane="gp" aria-selected="false">GP pages<span class="count" id="c-gp"></span></button>
@@ -221,13 +276,18 @@ body.locked main,body.locked header,body.locked nav{visibility:hidden}
   <section class="pane on" id="pane-patterns">
     <div class="toolbar">
       <input type="search" id="q-pat" placeholder="filter declarations… e.g. margin-top, !important, -1em">
-      <button class="chip" id="f-neg">negative only</button>
-      <button class="chip" id="f-imp">!important only</button>
-      <button class="chip" id="f-shared">shared (3+ families)</button>
+      <div class="segmented" id="scope-pat" role="radiogroup" aria-label="Scope">
+        <button role="radio" class="seg on" data-scope="all" aria-checked="true">All</button>
+        <button role="radio" class="seg" data-scope="xf" aria-checked="false">XF</button>
+        <button role="radio" class="seg" data-scope="gp" aria-checked="false">Pages</button>
+      </div>
+      <button class="chip" id="f-shared">shared (3+)</button>
       <span class="hint" id="h-pat"></span>
     </div>
+    <div class="filtbar" id="catbar-pat"><span class="lbl">category</span></div>
+    <div class="filtbar" id="riskbar-pat"><span class="lbl">risk</span></div>
     <table>
-      <thead><tr><th style="width:24px"></th><th>Declaration</th><th class="num" style="text-align:right">Uses</th><th class="num" style="text-align:right">Fragments</th><th>Families</th></tr></thead>
+      <thead><tr><th style="width:24px"></th><th>Declaration</th><th>Category</th><th class="num" style="text-align:right">Uses</th><th class="num" style="text-align:right">XF</th><th class="num" style="text-align:right">GP</th><th>Spread</th></tr></thead>
       <tbody id="t-pat"></tbody>
     </table>
   </section>
@@ -235,10 +295,17 @@ body.locked main,body.locked header,body.locked nav{visibility:hidden}
   <section class="pane" id="pane-selectors">
     <div class="toolbar">
       <input type="search" id="q-sel" placeholder="filter selectors… e.g. cmp-tabs, #map">
-      <span class="hint">Selectors carrying spacing rules inside &lt;style&gt; blocks — Core Component overrides surface here.</span>
+      <div class="segmented" id="scope-sel" role="radiogroup" aria-label="Scope">
+        <button role="radio" class="seg on" data-scope="all" aria-checked="true">All</button>
+        <button role="radio" class="seg" data-scope="xf" aria-checked="false">XF</button>
+        <button role="radio" class="seg" data-scope="gp" aria-checked="false">Pages</button>
+      </div>
+      <span class="hint" id="h-sel">Selectors inside &lt;style&gt; blocks — Core Component overrides surface here.</span>
     </div>
+    <div class="filtbar" id="catbar-sel"><span class="lbl">category</span></div>
+    <div class="filtbar" id="riskbar-sel"><span class="lbl">risk</span></div>
     <table>
-      <thead><tr><th style="width:24px"></th><th>Selector</th><th class="num" style="text-align:right">Spacing rules</th><th class="num" style="text-align:right">Fragments</th></tr></thead>
+      <thead><tr><th style="width:24px"></th><th>Selector</th><th>Category</th><th class="num" style="text-align:right">Rules</th><th class="num" style="text-align:right">XF</th><th class="num" style="text-align:right">GP</th><th>Spread</th></tr></thead>
       <tbody id="t-sel"></tbody>
     </table>
   </section>
@@ -464,12 +531,38 @@ const ATTR_RE = /style\s*=\s*"[^"]*"/gi;
 const BLOCK_RE = /<style[^>]*>[\s\S]*?<\/style>/gi;
 const SP_RE = /((?:padding|margin)(?:-[a-z]+)?|gap)\s*:\s*[^;"}<]+/gi;
 
+/* CSS-property taxonomy — mirrors build.py's categorize()/risk_tags() exactly.
+   Selectors ship their categories from the build, but pattern rows are
+   categorised here from the declaration string, so these two must stay in step.
+   The `spacing` predicate matches is_spacing so the old view is reproducible. */
+const CATS = ['spacing','layout','sizing','type','color','effect','other'];
+const CAT_LABEL = {spacing:'Spacing',layout:'Layout',sizing:'Sizing',type:'Type',color:'Color',effect:'Effect',other:'Other'};
+function categorize(prop){
+  if(prop.startsWith('padding')||prop.startsWith('margin')||prop==='gap') return 'spacing';
+  if(['display','position','float','clear','top','right','bottom','left','z-index','order','visibility','overflow','overflow-x','overflow-y','place-items','place-content'].includes(prop)
+     || /^(flex|grid|align|justify)/.test(prop)) return 'layout';
+  if(['width','height','box-sizing','aspect-ratio'].includes(prop) || /^(min-|max-)/.test(prop)) return 'sizing';
+  if(/^(font|text|line-height|letter|word|white-space|list-style|vertical-align|direction)/.test(prop)) return 'type';
+  if(prop==='color'||prop.startsWith('background')||prop.endsWith('color')||['opacity','fill','stroke','mix-blend-mode'].includes(prop)) return 'color';
+  if(/^(border|box-shadow|outline|transform|transition|animation|filter|backdrop|cursor|content|clip|-webkit|-moz)/.test(prop)) return 'effect';
+  return 'other';
+}
+const RISKS = [['imp','!important'],['neg','negative'],['px','px'],['hex','hex color'],['pos','position'],['media','@media']];
+function declRiskTags(prop, val){   /* decl-level only; `media` is per-freeform */
+  const t=[];
+  if(val.includes('!important')) t.push('imp');
+  if(/-\d/.test(val)) t.push('neg');
+  if(/\d+px/.test(val)) t.push('px');
+  if(/#[0-9a-f]{3,6}\b/.test(val)) t.push('hex');
+  if(prop==='position' && (val==='absolute'||val==='fixed')) t.push('pos');
+  return t;
+}
+
 /* Per-item facts come from analysis.json. When an item has no entry — a fresh
    freeforms.json paired with an older analysis.json — derive them here instead
    of rendering zeroes. This mirrors build.py's extract_decls exactly (same
    regions, same comment and @media stripping) so a recomputed count never
    disagrees with a built one. Lazy: the matched case costs nothing. */
-const isSpacingProp = prop => prop.startsWith('padding') || prop.startsWith('margin') || prop==='gap';
 function declsOf(text){
   const out=[];
   for(const m of text.matchAll(/style\s*=\s*"([^"]*)"/gi)){
@@ -492,10 +585,23 @@ function facts(p){
   if(FACTS[p]) return FACTS[p];
   const t = has(p) ? ITEMS[p].text : '';
   const nAttrs=(t.match(ATTR_RE)||[]).length, nBlocks=(t.match(BLOCK_RE)||[]).length;
-  const spacing=declsOf(t).filter(([prop])=>isSpacingProp(prop)).map(([a,b])=>`${a}: ${b}`);
-  return FACTS[p]={spacing, nAttrs, nBlocks,
-                   styled:(nAttrs||nBlocks)?1:0, sp:spacing.length?1:0};
+  const n={}, r={};
+  for(const [prop,val] of declsOf(t)){
+    const c=categorize(prop); n[c]=(n[c]||0)+1;
+    for(const tag of declRiskTags(prop,val)) r[tag]=(r[tag]||0)+1;
+  }
+  if(/@media/i.test(t)) r.media=1;
+  return FACTS[p]={n, r, nAttrs, nBlocks,
+                   styled:(nAttrs||nBlocks)?1:0, sp:n.spacing?1:0};
 }
+const catCount = (p,c) => (facts(p).n||{})[c]||0;
+const hasMedia = p => !!((facts(p).r||{}).media);
+
+/* analysis.json interns paths into AN.paths; a row references them as integer
+   indices in `p`. Older builds inlined path strings in `paths` — support both so
+   a mismatched pair still resolves instead of showing empty panes. */
+const AN_PATHS = Array.isArray(AN.paths) ? AN.paths : null;
+const resolveRow = r => r.paths ? r.paths : (AN_PATHS ? (r.p||[]).map(i=>AN_PATHS[i]) : []);
 
 const XF_PATHS = Object.keys(ITEMS).filter(p=>ITEMS[p].scope==='xf').sort();
 const GP_PATHS = Object.keys(ITEMS).filter(p=>ITEMS[p].scope==='gp').sort();
@@ -513,8 +619,31 @@ const GP_PAGE_AT = {};      /* page -> index into GP_PAGES */
     GP_PAGES.push({page:pg, paths:byPage.get(pg)});
   });
 })();
-const PATTERNS = (AN.patterns||[]).map(p=>({...p, paths:live(p.paths)})).filter(p=>p.paths.length);
-const SELECTORS = (AN.selectors||[]).map(s=>({...s, paths:live(s.paths)})).filter(s=>s.paths.length);
+const isXf = p => ITEMS[p].scope==='xf';
+const famOf = p => (ITEMS[p] && ITEMS[p].family) || '';
+/* Attach the scope/category/risk facts each row is filtered and sorted by, once. */
+function enrich(row){
+  const paths=row.paths;
+  row.xf=paths.filter(isXf); row.gp=paths.filter(p=>!isXf(p));
+  row.nXf=row.xf.length; row.nGp=row.gp.length;
+  row.pages=new Set(row.gp.map(p=>ITEMS[p].page));
+  row.fams=new Set(row.xf.map(famOf));
+  if(!row.rset){                 /* patterns: derive from the decl; selectors: from stored risk */
+    row.rset=new Set(row.risk || declRiskTags((row.decl.split(':')[0]||'').trim(),
+                                              (row.decl.split(/:(.+)/)[1]||'').trim()));
+  }
+  if(paths.some(hasMedia)) row.rset.add('media');
+  return row;
+}
+const PATTERNS = (AN.patterns||[]).map(p=>{
+  const paths=live(resolveRow(p));
+  return {decl:p.decl, uses:p.uses, paths, cat:categorize((p.decl.split(':')[0]||'').trim())};
+}).filter(p=>p.paths.length).map(enrich);
+const SELECTORS = (AN.selectors||[]).map(s=>{
+  const paths=live(resolveRow(s));
+  const cats=(s.cats&&s.cats.length)?s.cats:null;   /* null => pre-v4, category filter is a no-op */
+  return {sel:s.sel, count:s.count, cats, catSet:cats?new Set(cats):null, risk:s.risk||[], paths};
+}).filter(s=>s.paths.length).map(enrich);
 
 /* ================= FLAGS, NOTES & SNAPSHOTS =================
    Single store: path -> {flag, note, ts, snap}. A note persists whether or not the
@@ -790,10 +919,17 @@ document.getElementById('stats').innerHTML = `
   <div class="stat"><b>${STAT.gpPages.toLocaleString()}</b><i>GP pages</i></div>
   <div class="stat"><b>${STAT.gpTotal.toLocaleString()}</b><i>GP freeforms</i></div>
   <div class="stat am"><b>${STAT.gpSpacing.toLocaleString()}</b><i>GP with spacing</i></div>`;
-document.getElementById('c-pat').textContent = PATTERNS.length;
-document.getElementById('c-sel').textContent = SELECTORS.length;
+document.getElementById('c-pat').textContent = PATTERNS.length.toLocaleString();
+document.getElementById('c-sel').textContent = SELECTORS.length.toLocaleString();
 document.getElementById('c-frag').textContent = XF_PATHS.length;
 document.getElementById('c-gp').textContent = GP_PAGES.length.toLocaleString();
+
+/* category colour key + declaration-instance totals (meta if present, else derived) */
+const CAT_TOTALS = (AN.meta && AN.meta.cats) ? AN.meta.cats : (()=>{
+  const t={}; Object.keys(ITEMS).forEach(p=>{ const n=facts(p).n||{}; for(const c in n) t[c]=(t[c]||0)+n[c]; }); return t;
+})();
+document.getElementById('catlegend').innerHTML = CATS.filter(c=>CAT_TOTALS[c]).map(c=>
+  `<span><span class="dot" style="background:var(--c-${c})"></span> ${CAT_LABEL[c]} <span class="mono" style="color:var(--faint)">${CAT_TOTALS[c].toLocaleString()}</span></span>`).join('');
 
 /* ---------- drift between freeforms.json, analysis.json and your annotations ---------- */
 const AN_MISSING = Object.keys(ITEMS).filter(p=>!PER[p]).length;
@@ -802,8 +938,10 @@ function renderStaleBar(){
   const bar=document.getElementById('stalebar');
   const notes=[];
   if(DATA.anErr){
-    notes.push(`<b>analysis.json did not load</b> (${esc(DATA.anErr)}). Spacing patterns and selectors are empty; every per-freeform count below was recomputed in the browser.`);
+    notes.push(`<b>analysis.json did not load</b> (${esc(DATA.anErr)}). Style patterns and selectors are empty; every per-freeform count below was recomputed in the browser.`);
   }else{
+    if(AN.patterns && !AN_PATHS && (AN.patterns[0]||{}).p)
+      notes.push(`<b>analysis.json predates this page</b> — it references an interned path table that is missing. Rebuild with the current <span class="mono">build.py</span> so patterns and selectors resolve.`);
     if(AN_MISSING) notes.push(`${AN_MISSING.toLocaleString()} freeform${AN_MISSING===1?'':'s'} in <span class="mono">freeforms.json</span> ${AN_MISSING===1?'is':'are'} missing from <span class="mono">analysis.json</span> — their counts were recomputed in the browser, but they are absent from patterns and selectors until you rebuild.`);
     if(AN_GHOST) notes.push(`${AN_GHOST.toLocaleString()} path${AN_GHOST===1?'':'s'} in <span class="mono">analysis.json</span> ${AN_GHOST===1?'is':'are'} no longer in <span class="mono">freeforms.json</span> — skipped.`);
   }
@@ -829,9 +967,17 @@ function spans(text){
   }
   return out.sort((a,b)=>a[0]-b[0]);
 }
+/* colour a declaration value, then flag !important / negative inside it */
+const markVal = v => v
+  .replace(/!important/gi, m=>`<u class="r-imp">${m}</u>`)
+  .replace(/(^|[\s:(,])(-\.?\d[\w.%-]*)/g, (m,a,b)=>`${a}<u class="r-neg">${b}</u>`);
+/* one declaration -> category-coloured mark; DECL is anchored to prop:value so it
+   only fires inside the style attr / <style> regions passed to inner() */
+const DECL_HL = /([a-z-]+)(\s*:\s*)([^;"{}<]+)/gi;
 function highlight(text, extraRe){
   const sp = spans(text); let html='', pos=0;
-  const inner = seg => esc(seg).replace(SP_RE, mm=>`<mark class="sp">${mm}</mark>`);
+  const inner = seg => esc(seg).replace(DECL_HL,
+    (m,prop,mid,val)=>`<mark class="c-${categorize(prop.toLowerCase())}">${prop}${mid}${markVal(val)}</mark>`);
   for(const [s,e,cls] of sp){
     if(s<pos) continue;
     html += esc(text.slice(pos,s));
@@ -853,26 +999,56 @@ const declRe = decl => {
   return new RegExp(escRe(p)+'\\s*:\\s*'+escRe(v).replace(/ /g,'\\s+'),'gi');
 };
 
-/* ---------- shared instance card (XF) ---------- */
+/* ---------- shared instance card (XF or GP page freeform) ---------- */
 function icard(path, needle){
   const it = ITEMS[path];
   if(!it) return '';
+  const xf = it.scope==='xf';
+  const name = xf ? fragName(path) : shortPage(it.page);
+  const tag = xf ? '' : ' <span class="nmark">page</span>';
+  const jump = xf
+    ? `<a href="#" data-goto="${esc(path)}">View source →</a>`
+    : `<a href="#" data-gotogp="${esc(it.page)}" data-ff="${esc(path)}">View source →</a>`;
   let snipHtml='';
   if(needle){
     const sn = snippet(it.text, needle);
     if(sn) snipHtml = `<div class="snip">${highlight(sn)}</div>`;
   }
   return `<div class="icard${isFlagged(path)?' flagged':''}">
-    <div class="name">${esc(fragName(path))}</div>
+    <div class="name">${esc(name)}${tag}</div>
     <div class="path">${esc(path)}</div>
     <div class="links">
       <a href="${authorLink(path)}" target="_blank" rel="noopener">Open in editor ↗</a>
       <a href="${crxLink(path)}" target="_blank" rel="noopener">CRXDE ↗</a>
-      <a href="#" data-goto="${esc(path)}">View source →</a>
+      ${jump}
       ${flagBtn(path)}
       ${noteBtn(path)}
     </div>
     ${noteSlot(path)}${snipHtml}</div>`;
+}
+/* Expanded-row body: XF instances first, then GP grouped by page and capped so a
+   345-freeform pattern does not render hundreds of cards at once. */
+const INST_CAP = 40;
+function instancesHTML(row, needle, budget){
+  const cap = budget||INST_CAP;
+  let html = row.xf.map(x=>icard(x, needle)).join('');
+  const gp = row.gp;
+  if(gp.length){
+    const byPage=new Map();
+    gp.forEach(p=>{ const pg=ITEMS[p].page; if(!byPage.has(pg)) byPage.set(pg,[]); byPage.get(pg).push(p); });
+    const pages=[...byPage.keys()].sort();
+    let rendered=0, cutPages=0;
+    const parts=[];
+    for(const pg of pages){
+      if(rendered>=cap){ cutPages=pages.length-pages.indexOf(pg); break; }
+      const cards=byPage.get(pg).map(p=>icard(p, needle)).join('');
+      parts.push(`<div class="pagegrp"><div class="cpath">${esc(shortPage(pg))} · ${byPage.get(pg).length} freeform${byPage.get(pg).length>1?'s':''}</div>${cards}</div>`);
+      rendered+=byPage.get(pg).length;
+    }
+    html += `<div class="gpinst">${parts.join('')}</div>`;
+    if(cutPages) html += `<button class="more" data-expand>Show ${gp.length-rendered} more page freeform${gp.length-rendered>1?'s':''} (${cutPages} page${cutPages>1?'s':''})</button>`;
+  }
+  return html;
 }
 document.addEventListener('click', e=>{
   const g = e.target.closest('[data-goto]'); if(!g) return;
@@ -887,80 +1063,198 @@ document.addEventListener('click', e=>{
   selectGP(g.dataset.gotogp, g.dataset.ff||null, true);
 });
 
+/* ---------- shared filtering for the patterns + selectors tables ---------- */
+const scopeCount = (row, sc) => sc==='xf' ? row.nXf : sc==='gp' ? row.nGp : row.paths.length;
+const rowPassesScope = (row, sc) => sc==='all' || scopeCount(row,sc)>0;
+const rowPassesRisks = (rset, want) => { for(const r of want) if(!rset.has(r)) return false; return true; };
+function rowSpread(row){
+  const parts=[];
+  if(row.nXf) parts.push(esc([...row.fams].map(f=>f.split('/').pop()).filter(Boolean).join(', ')||'XF'));
+  if(row.nGp) parts.push(`${row.pages.size} page${row.pages.size>1?'s':''}`);
+  return parts.join(' · ');
+}
+/* build the category + risk chip bars once; onChange re-renders the table */
+function buildCatChips(host, sel, onChange){
+  const all=document.createElement('button');
+  all.className='chip catall'+(sel.cats.size?'':' on'); all.type='button'; all.textContent='All';
+  const sync=()=>{
+    all.classList.toggle('on', sel.cats.size===0);
+    host.querySelectorAll('.chip.cat').forEach(b=>b.classList.toggle('on', sel.cats.has(b.dataset.cat)));
+  };
+  all.addEventListener('click',()=>{ sel.cats.clear(); sync(); onChange(); });
+  host.appendChild(all);
+  CATS.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='chip cat'+(sel.cats.has(c)?' on':''); b.type='button'; b.dataset.cat=c; b.textContent=CAT_LABEL[c];
+    b.addEventListener('click',()=>{ sel.cats.has(c)?sel.cats.delete(c):sel.cats.add(c); sync(); onChange(); });
+    host.appendChild(b);
+  });
+  host._syncCats=sync;
+}
+function buildRiskChips(host, sel, onChange){
+  RISKS.forEach(([k,label])=>{
+    const b=document.createElement('button');
+    b.className='chip risk'+(sel.risks.has(k)?' on':''); b.type='button'; b.dataset.risk=k; b.textContent=label;
+    b.addEventListener('click',()=>{ sel.risks.has(k)?sel.risks.delete(k):sel.risks.add(k); b.classList.toggle('on',sel.risks.has(k)); onChange(); });
+    host.appendChild(b);
+  });
+}
+function wireScope(host, sel, onChange){
+  host.addEventListener('click',e=>{
+    const b=e.target.closest('[data-scope]'); if(!b) return;
+    sel.scope=b.dataset.scope;
+    host.querySelectorAll('.seg').forEach(s=>{ const on=s===b; s.classList.toggle('on',on); s.setAttribute('aria-checked',on); });
+    onChange();
+  });
+}
+/* repaint a pane's chip + segmented state from its filter object (used on restore) */
+function paintFilters(pane, sel){
+  const cbar=document.getElementById('catbar-'+pane);
+  if(cbar && cbar._syncCats) cbar._syncCats();
+  document.querySelectorAll('#riskbar-'+pane+' .chip.risk').forEach(b=>b.classList.toggle('on', sel.risks.has(b.dataset.risk)));
+  document.querySelectorAll('#scope-'+pane+' .seg').forEach(s=>{ const on=s.dataset.scope===sel.scope; s.classList.toggle('on',on); s.setAttribute('aria-checked',on); });
+}
+/* the "show more page freeforms" button inside an expanded row */
+function wireExpand(td, row, needle){
+  const b=td.querySelector('[data-expand]'); if(!b) return;
+  b.addEventListener('click',()=>{ td.innerHTML=instancesHTML(row, needle, Infinity); wireExpand(td,row,needle); });
+}
+
 /* ---------- patterns ---------- */
-const patFilters={neg:false,imp:false,shared:false,q:''};
-const famOf = p => (ITEMS[p] && ITEMS[p].family) || '';
-const famList = paths => [...new Set(paths.map(p=>famOf(p).split('/').pop()))].filter(Boolean).join(', ');
+const patFilters={q:'',scope:'all',shared:false,cats:new Set(['spacing']),risks:new Set()};
+const PAT_CAP=300; let patShown=PAT_CAP;
 function renderPatterns(){
-  const tb=document.getElementById('t-pat'); tb.innerHTML=''; let shown=0;
-  PATTERNS.forEach(p=>{
-    if(patFilters.q && !p.decl.includes(patFilters.q)) return;
-    if(patFilters.neg && !/-\d/.test(p.decl.split(':')[1]||'')) return;
-    if(patFilters.imp && !p.decl.includes('!important')) return;
-    const fams=new Set(p.paths.map(famOf));
-    if(patFilters.shared && fams.size<3) return;
-    shown++;
+  const tb=document.getElementById('t-pat'); tb.innerHTML='';
+  const sc=patFilters.scope, cats=patFilters.cats;
+  let rows=PATTERNS.filter(r=>{
+    if(patFilters.q && !r.decl.includes(patFilters.q)) return false;
+    if(!rowPassesScope(r,sc)) return false;
+    if(cats.size && !cats.has(r.cat)) return false;
+    if(!rowPassesRisks(r.rset, patFilters.risks)) return false;
+    if(patFilters.shared){
+      const n = sc==='xf'?r.fams.size : sc==='gp'?r.pages.size : r.fams.size+r.pages.size;
+      if(n<3) return false;
+    }
+    return true;
+  });
+  rows.sort((a,b)=> scopeCount(b,sc)-scopeCount(a,sc) || b.uses-a.uses || (a.decl<b.decl?-1:1));
+  const total=rows.length;
+  rows.slice(0,patShown).forEach(r=>{
     const tr=document.createElement('tr');
     tr.className='row'; tr.setAttribute('aria-expanded','false'); tr.tabIndex=0;
-    tr.innerHTML=`<td><span class="caret">▸</span></td><td class="decl">${esc(p.decl)}</td>
-      <td class="num">${p.uses}</td><td class="num">${p.paths.length}</td><td class="fams">${esc(famList(p.paths))}</td>`;
+    tr.innerHTML=`<td><span class="caret">▸</span></td>
+      <td class="decl">${esc(r.decl)}</td>
+      <td><span class="catdot" data-cat="${r.cat}"></span>${CAT_LABEL[r.cat]}</td>
+      <td class="num">${r.uses}</td>
+      <td class="num">${r.nXf||''}</td>
+      <td class="num">${r.nGp||''}</td>
+      <td class="fams">${rowSpread(r)}</td>`;
     const open=()=>{
       const ex=tr.getAttribute('aria-expanded')==='true';
       tr.setAttribute('aria-expanded',!ex);
       if(ex){ tr.nextElementSibling?.classList.contains('inst') && tr.nextElementSibling.remove(); return; }
       const ir=document.createElement('tr'); ir.className='inst';
-      ir.innerHTML=`<td colspan="5">${p.paths.map(x=>icard(x, declRe(p.decl))).join('')}</td>`;
-      tr.after(ir);
+      const td=document.createElement('td'); td.colSpan=7;
+      const needle=declRe(r.decl);
+      td.innerHTML=instancesHTML(r, needle); wireExpand(td,r,needle);
+      ir.appendChild(td); tr.after(ir);
     };
     tr.addEventListener('click',e=>{ if(e.target.closest('a,button')) return; open(); });
     tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();open();} });
     tb.appendChild(tr);
   });
-  document.getElementById('h-pat').textContent=`${shown} of ${PATTERNS.length} patterns`;
+  if(total>patShown){
+    const tr=document.createElement('tr'), td=document.createElement('td'); td.colSpan=7;
+    const mb=document.createElement('button'); mb.className='more'; mb.textContent=`Show more (${(total-patShown).toLocaleString()} remaining)`;
+    mb.addEventListener('click',()=>{ patShown+=PAT_CAP; renderPatterns(); });
+    td.appendChild(mb); tr.appendChild(td); tb.appendChild(tr);
+  }
+  document.getElementById('h-pat').textContent=`${Math.min(total,patShown).toLocaleString()} of ${total.toLocaleString()} patterns`;
 }
-document.getElementById('q-pat').addEventListener('input',e=>{patFilters.q=e.target.value.toLowerCase().trim();renderPatterns();});
-for(const [id,key] of [['f-neg','neg'],['f-imp','imp'],['f-shared','shared']]){
-  document.getElementById(id).addEventListener('click',e=>{
-    patFilters[key]=!patFilters[key]; e.target.classList.toggle('on',patFilters[key]); renderPatterns();
-  });
-}
+const rerenderPat=()=>{ patShown=PAT_CAP; renderPatterns(); saveUI(); };
+document.getElementById('q-pat').addEventListener('input',e=>{patFilters.q=e.target.value.toLowerCase().trim();rerenderPat();});
+document.getElementById('f-shared').addEventListener('click',e=>{patFilters.shared=!patFilters.shared;e.target.classList.toggle('on',patFilters.shared);rerenderPat();});
+buildCatChips(document.getElementById('catbar-pat'), patFilters, rerenderPat);
+buildRiskChips(document.getElementById('riskbar-pat'), patFilters, rerenderPat);
+wireScope(document.getElementById('scope-pat'), patFilters, rerenderPat);
 renderPatterns();
 
 /* ---------- selectors ---------- */
+const selFilters={q:'',scope:'all',cats:new Set(),risks:new Set()};
+const SEL_CAP=300; let selShown=SEL_CAP;
+const selPassesCats=(s,want)=>{ if(!want.size) return true; if(!s.catSet) return true; for(const c of want) if(s.catSet.has(c)) return true; return false; };
+function selDots(s){
+  const cs = s.cats && s.cats.length ? s.cats : ['other'];
+  return cs.map(c=>`<span class="catdot" data-cat="${c}" title="${CAT_LABEL[c]||c}"></span>`).join('');
+}
 function renderSelectors(){
-  const q=document.getElementById('q-sel').value.toLowerCase().trim();
   const tb=document.getElementById('t-sel'); tb.innerHTML='';
-  SELECTORS.forEach(s=>{
-    if(q && !s.sel.toLowerCase().includes(q)) return;
+  const sc=selFilters.scope;
+  let rows=SELECTORS.filter(s=>{
+    if(selFilters.q && !s.sel.toLowerCase().includes(selFilters.q)) return false;
+    if(!rowPassesScope(s,sc)) return false;
+    if(!selPassesCats(s, selFilters.cats)) return false;
+    if(!rowPassesRisks(s.rset, selFilters.risks)) return false;
+    return true;
+  });
+  rows.sort((a,b)=> scopeCount(b,sc)-scopeCount(a,sc) || b.count-a.count || (a.sel<b.sel?-1:1));
+  const total=rows.length;
+  rows.slice(0,selShown).forEach(s=>{
     const tr=document.createElement('tr');
     tr.className='row'; tr.setAttribute('aria-expanded','false'); tr.tabIndex=0;
-    tr.innerHTML=`<td><span class="caret">▸</span></td><td class="sel">${esc(s.sel)}</td>
-      <td class="num">${s.count}</td><td class="num">${s.paths.length}</td>`;
+    tr.innerHTML=`<td><span class="caret">▸</span></td>
+      <td class="sel">${esc(s.sel)}</td>
+      <td>${selDots(s)}</td>
+      <td class="num">${s.count}</td>
+      <td class="num">${s.nXf||''}</td>
+      <td class="num">${s.nGp||''}</td>
+      <td class="fams">${rowSpread(s)}</td>`;
     const open=()=>{
       const ex=tr.getAttribute('aria-expanded')==='true';
       tr.setAttribute('aria-expanded',!ex);
       if(ex){ tr.nextElementSibling?.classList.contains('inst') && tr.nextElementSibling.remove(); return; }
       const ir=document.createElement('tr'); ir.className='inst';
-      const re=new RegExp(escRe(s.sel).replace(/ /g,'\\s+')+'[^{]*\\{','gi');
-      ir.innerHTML=`<td colspan="4">${s.paths.map(x=>icard(x,re)).join('')}</td>`;
-      tr.after(ir);
+      const td=document.createElement('td'); td.colSpan=7;
+      const needle=new RegExp(escRe(s.sel).replace(/ /g,'\\s+')+'[^{]*\\{','gi');
+      td.innerHTML=instancesHTML(s, needle); wireExpand(td,s,needle);
+      ir.appendChild(td); tr.after(ir);
     };
     tr.addEventListener('click',e=>{ if(e.target.closest('a,button')) return; open(); });
     tr.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();open();} });
     tb.appendChild(tr);
   });
+  if(total>selShown){
+    const tr=document.createElement('tr'), td=document.createElement('td'); td.colSpan=7;
+    const mb=document.createElement('button'); mb.className='more'; mb.textContent=`Show more (${(total-selShown).toLocaleString()} remaining)`;
+    mb.addEventListener('click',()=>{ selShown+=SEL_CAP; renderSelectors(); });
+    td.appendChild(mb); tr.appendChild(td); tb.appendChild(tr);
+  }
+  document.getElementById('h-sel').textContent=`${Math.min(total,selShown).toLocaleString()} of ${total.toLocaleString()} selectors`;
 }
-document.getElementById('q-sel').addEventListener('input',renderSelectors);
+const rerenderSel=()=>{ selShown=SEL_CAP; renderSelectors(); saveUI(); };
+document.getElementById('q-sel').addEventListener('input',e=>{selFilters.q=e.target.value.toLowerCase().trim();rerenderSel();});
+buildCatChips(document.getElementById('catbar-sel'), selFilters, rerenderSel);
+buildRiskChips(document.getElementById('riskbar-sel'), selFilters, rerenderSel);
+wireScope(document.getElementById('scope-sel'), selFilters, rerenderSel);
 renderSelectors();
 
+/* ---------- source-viewer helpers shared by XF + GP ---------- */
+const lensClass = cur => cur ? `lens lens-${cur}` : '';
+const lensSelect = (id, cur) => `<label class="toggle">Lens
+  <select class="lenssel" id="${id}">
+    <option value=""${cur?'':' selected'}>off</option>
+    ${CATS.map(c=>`<option value="${c}"${cur===c?' selected':''}>${CAT_LABEL[c]}</option>`).join('')}
+  </select></label>`;
+const catBadges = f => CATS.filter(c=>(f.n||{})[c]).map(c=>`<span class="b cat" data-cat="${c}">${f.n[c]} ${c}</span>`).join('');
+
 /* ---------- XF fragments ---------- */
-let curFrag=null, lensXF=false;
+let curFrag=null, lensXF='spacing';
 const fragFilters={q:'',sp:false,fl:false};
 function renderFragList(){
   const fl=document.getElementById('flist'); if(!fl) return; fl.innerHTML='';
   XF_PATHS.forEach(p=>{
     const f=facts(p);
-    if(fragFilters.sp && !f.spacing.length) return;
+    if(fragFilters.sp && !f.sp) return;
     if(fragFilters.fl && !(isFlagged(p)||hasNote(p))) return;
     if(fragFilters.q && !(p+' '+ITEMS[p].text).toLowerCase().includes(fragFilters.q)) return;
     const b=document.createElement('button');
@@ -970,7 +1264,7 @@ function renderFragList(){
       <div class="badges">
         ${f.nAttrs?`<span class="b attr">${f.nAttrs} attr</span>`:''}
         ${f.nBlocks?`<span class="b block">${f.nBlocks} block</span>`:''}
-        ${f.spacing.length?`<span class="b sp">${f.spacing.length} spacing</span>`:''}
+        ${catBadges(f)}
       </div>`;
     b.addEventListener('click',()=>selectFrag(p));
     fl.appendChild(b);
@@ -995,12 +1289,12 @@ function selectFrag(path, scroll){
       ${noteSlot(path)}
     </div>
     <div class="vtools">
-      <label class="toggle"><input type="checkbox" id="lensXF" ${lensXF?'checked':''}> Spacing lens</label>
+      ${lensSelect('lensXF', lensXF)}
     </div>
-    <div id="xfsrcwrap" class="${lensXF?'lens':''}"><div class="src">${highlight(it.text,qre)}</div></div>`;
+    <div id="xfsrcwrap" class="${lensClass(lensXF)}"><div class="src">${highlight(it.text,qre)}</div></div>`;
   document.getElementById('lensXF').addEventListener('change',e=>{
-    lensXF=e.target.checked;
-    document.getElementById('xfsrcwrap').classList.toggle('lens',lensXF);
+    lensXF=e.target.value;
+    document.getElementById('xfsrcwrap').className=lensClass(lensXF);
   });
   if(scroll) document.getElementById('viewer').scrollIntoView({block:'start'});
 }
@@ -1010,7 +1304,7 @@ document.getElementById('f-fragfl').addEventListener('click',e=>{fragFilters.fl=
 renderFragList();
 
 /* ---------- GP pages ---------- */
-let curGP=null, lensGP=false, gpShown=200;
+let curGP=null, lensGP='spacing', gpShown=200;
 const gpFilters={q:'',styled:false,sp:false,fl:false};
 function gpMatches(){
   return GP_PAGES.filter(pg=>{
@@ -1066,10 +1360,10 @@ function selectGP(page, ffPath=null, scroll){
       </div>
     </div>
     <div class="vtools">
-      <label class="toggle"><input type="checkbox" id="lensGP" ${lensGP?'checked':''}> Spacing lens</label>
+      ${lensSelect('lensGP', lensGP)}
       <span class="hint">${pg.paths.length} freeform${pg.paths.length>1?'s':''} on this page</span>
     </div>
-    <div id="gpsrcwrap" class="${lensGP?'lens':''}">${pg.paths.map(p=>{
+    <div id="gpsrcwrap" class="${lensClass(lensGP)}">${pg.paths.map(p=>{
       const f=facts(p), t=ITEMS[p].text;
       return `<div class="ffsec" data-ffpath="${esc(p)}">
         <div class="ffhead">
@@ -1078,7 +1372,7 @@ function selectGP(page, ffPath=null, scroll){
             <div class="badges" style="margin-top:4px">
               ${f.nAttrs?`<span class="b attr">${f.nAttrs} attr</span>`:''}
               ${f.nBlocks?`<span class="b block">${f.nBlocks} block</span>`:''}
-              ${f.sp?`<span class="b sp">spacing</span>`:''}
+              ${catBadges(f)}
             </div>
           </div>
           <div style="display:flex;gap:10px;align-items:center;flex-shrink:0">
@@ -1092,8 +1386,8 @@ function selectGP(page, ffPath=null, scroll){
       </div>`;
     }).join('')}</div>`;
   document.getElementById('lensGP').addEventListener('change',e=>{
-    lensGP=e.target.checked;
-    document.getElementById('gpsrcwrap').classList.toggle('lens',lensGP);
+    lensGP=e.target.value;
+    document.getElementById('gpsrcwrap').className=lensClass(lensGP);
   });
   if(ffPath){
     const t=v.querySelector(`.ffsec[data-ffpath="${CSS.escape(ffPath)}"]`);
@@ -1192,17 +1486,19 @@ refreshFlagUI();
    are saved to localStorage (debounced) and restored after unlock, so a reload
    drops you back exactly where you were. Flags/notes are already saved per keystroke. */
 const UI_KEY='freeform-audit-ui-v1';
+const packFilters = f => ({scope:f.scope, shared:!!f.shared, cats:[...f.cats], risks:[...f.risks]});
 function collectUI(){
   return {
     tab: document.querySelector('[role=tab][aria-selected=true]')?.dataset.pane || 'patterns',
-    patQ: document.getElementById('q-pat').value, pat: {...patFilters},
-    selQ: document.getElementById('q-sel').value,
+    patQ: document.getElementById('q-pat').value, pat: packFilters(patFilters),
+    selQ: document.getElementById('q-sel').value, sel: packFilters(selFilters),
     fragQ: document.getElementById('q-frag').value, frag: {...fragFilters},
     gpQ: document.getElementById('q-gp').value, gp: {...gpFilters},
     xfSel: curFrag, gpSel: curGP,
     lensXF, lensGP, gpShown
   };
 }
+const coerceLens = v => typeof v==='string' ? v : (v ? 'spacing' : '');
 let uiTimer=null;
 function saveUI(){
   clearTimeout(uiTimer);
@@ -1216,12 +1512,22 @@ window.addEventListener('beforeunload', ()=>{ try{ localStorage.setItem(UI_KEY, 
   try{ s=JSON.parse(localStorage.getItem(UI_KEY)||'null'); }catch(e){}
   if(!s) return;
   /* searches + filter objects */
+  const applyPack = (f, packed)=>{
+    if(!packed) return;
+    if(typeof packed.scope==='string') f.scope=packed.scope;
+    f.shared=!!packed.shared;
+    if(Array.isArray(packed.cats)) f.cats=new Set(packed.cats);
+    if(Array.isArray(packed.risks)) f.risks=new Set(packed.risks);
+  };
   document.getElementById('q-pat').value = s.patQ||'';
-  Object.assign(patFilters, s.pat||{}, {q:(s.patQ||'').toLowerCase().trim()});
-  document.getElementById('f-neg').classList.toggle('on',!!patFilters.neg);
-  document.getElementById('f-imp').classList.toggle('on',!!patFilters.imp);
+  patFilters.q=(s.patQ||'').toLowerCase().trim();
+  applyPack(patFilters, s.pat);
   document.getElementById('f-shared').classList.toggle('on',!!patFilters.shared);
+  paintFilters('pat', patFilters);
   document.getElementById('q-sel').value = s.selQ||'';
+  selFilters.q=(s.selQ||'').toLowerCase().trim();
+  applyPack(selFilters, s.sel);
+  paintFilters('sel', selFilters);
   document.getElementById('q-frag').value = s.fragQ||'';
   Object.assign(fragFilters, s.frag||{}, {q:(s.fragQ||'').toLowerCase().trim()});
   document.getElementById('f-fragsp').classList.toggle('on',!!fragFilters.sp);
@@ -1231,7 +1537,7 @@ window.addEventListener('beforeunload', ()=>{ try{ localStorage.setItem(UI_KEY, 
   document.getElementById('f-gpstyled').classList.toggle('on',!!gpFilters.styled);
   document.getElementById('f-gpsp').classList.toggle('on',!!gpFilters.sp);
   document.getElementById('f-gpfl').classList.toggle('on',!!gpFilters.fl);
-  lensXF = !!s.lensXF; lensGP = !!s.lensGP;
+  lensXF = coerceLens(s.lensXF); lensGP = coerceLens(s.lensGP);
   gpShown = Math.max(200, s.gpShown|0);
   renderPatterns(); renderSelectors(); renderFragList(); renderGPList();
   /* selections by path (survives data regeneration as long as the path still exists) */

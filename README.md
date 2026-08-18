@@ -3,7 +3,8 @@
 An interactive, credential-gated audit of every `/apps/global/components/content/freeform`
 instance across Georgia Power pages (`/content/georgia-power`) and Georgia Power
 Experience Fragments (`/content/experience-fragments/georgiapower`), focused on inline
-styling and spacing overrides (padding / margin / gap).
+styling — spacing overrides (padding / margin / gap) plus every other CSS category
+(layout, sizing, typography, color, effects), with migration-risk tagging.
 
 The site is a small static app plus two encrypted data files. All fragment source, page
 content, and author paths are **AES-256-GCM encrypted**; the decryption key is derived
@@ -17,14 +18,20 @@ your flags and notes, and without rebuilding `index.html`.
 
 ## What's in the tool
 
-- **Spacing patterns** — every padding/margin/gap declaration found in XF freeforms,
-  ranked by how many fragments and fragment families share it, with drill-down to each
-  instance (author editor link, CRXDE node link, highlighted context snippet).
-- **Selectors** — CSS selectors carrying spacing rules inside `<style>` blocks
-  (Core Component overrides like `li.cmp-tabs__tab` surface here).
+- **Style patterns** — every inline CSS declaration found across **both** XF freeforms
+  and GP page freeforms, ranked by how many freeforms share it, with drill-down to each
+  instance (author editor link, CRXDE node link, highlighted context snippet). Filter by
+  **scope** (All / XF / Pages), by **category** (spacing, layout, sizing, type, color,
+  effect, other — spacing is preselected), and by **risk** (`!important`, negative values,
+  hardcoded px, hex colors, `position:absolute/fixed`, `@media`). Expanded rows show XF
+  instances first, then page freeforms grouped by page and capped with "show more".
+- **Selectors** — CSS selectors carrying any rule inside `<style>` blocks, across both
+  scopes (Core Component overrides like `li.cmp-tabs__tab` surface here). Same scope,
+  category, and risk filters as patterns.
 - **XF fragments** — browsable source viewer for all GP-brand XF freeforms with style
-  attributes, style blocks, and spacing declarations highlighted; "spacing lens" toggle
-  dims everything except spacing.
+  attributes and style blocks highlighted, each declaration coloured by category; the
+  **category lens** dims everything except the chosen category (`!important` and negative
+  values are underlined in place).
 - **GP pages** — all Georgia Power pages containing freeforms; click a page to see every
   freeform on it with the same viewer, links, and lens.
 - **Flagged & notes** — flag any freeform and attach notes from anywhere in the tool;
@@ -38,9 +45,9 @@ your flags and notes, and without rebuilding `index.html`.
 
 | Path | Committed? | What it is |
 |---|---|---|
-| `index.html` | ✅ push | The app shell plus a small credential sentinel. No content, ~60 KB. Only changes when the template or the credentials change. |
+| `index.html` | ✅ push | The app shell plus a small credential sentinel. No content, ~85 KB. Only changes when the template or the credentials change. |
 | `freeforms.json` | ✅ push | Freeform source keyed by `jcr:path`, encrypted + gzipped (~1.1 MB). Replace this to refresh the data. |
-| `analysis.json` | ✅ push | Derived spacing analysis (patterns, selectors, per-freeform counts), referencing paths only. Regenerated alongside `freeforms.json`. |
+| `analysis.json` | ✅ push | Derived analysis (patterns, selectors, per-freeform category/risk counts) over all scopes and properties. Paths are interned into one table and rows reference them by index, so the file stays small; regenerated alongside `freeforms.json`. |
 | `querybuilder.json` | ✅ push (optional) | Encrypted shared baseline of flags, notes, and source snapshots, keyed by `jcr:path`. Written by the Export button in the tool — never by the build. |
 | `queries.txt` | ✅ push | The AEM QueryBuilder request that produces the raw data, with how to run it and why each parameter is there. |
 | `README.md` / `.gitignore` | ✅ push | This file, and the rule that keeps build inputs out of the repo. |
@@ -95,9 +102,9 @@ The build prints which of those two happened; the last line is either
 
 - Flags and notes auto-save to the **browser's localStorage** on every change (plaintext,
   local to your machine, per-origin — the Pages URL and a local file: URL keep separate state).
-- Annotating a freeform also snapshots its source (capped at 40 KB), refreshed on load
-  while the freeform is still in the export. That snapshot is what the Legacy section
-  renders once the path disappears from `freeforms.json`.
+- Annotating a freeform also snapshots its full source, refreshed on load while the
+  freeform is still in the export. That snapshot is what the Legacy section renders once
+  the path disappears from `freeforms.json`.
 - To publish a shared baseline: **Flagged & notes → Export querybuilder.json**, then commit
   the downloaded file to the repo root. On load, the tool fetches it, decrypts it with the
   session key, and merges with local changes. Merging is per field: the newer timestamp
