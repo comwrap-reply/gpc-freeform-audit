@@ -1,160 +1,206 @@
-# Freeform Style Audit
+# Component Code Audit
 
-An interactive, credential-gated audit of every `/apps/global/components/content/freeform`
-instance across Georgia Power pages (`/content/georgia-power`) and Georgia Power
-Experience Fragments (`/content/experience-fragments/georgiapower`), focused on inline
-styling — spacing overrides (padding / margin / gap) plus every other CSS category
-(layout, sizing, typography, color, effects), with migration-risk tagging.
+Audit authored CSS, JavaScript, and attribute hooks across Georgia Power pages and
+Experience Fragments. The default **Components** view hides plain HTML and empty
+components. “Added” means present in the exported authored content; this is not a
+change-history comparison or a live-page runtime audit.
 
-The site is a small static app plus two encrypted data files. All fragment source, page
-content, and author paths are **AES-256-GCM encrypted**; the decryption key is derived
-from the login credentials (PBKDF2, 310k iterations), so the files are safe to host on a
-public GitHub Pages URL. Credentials are distributed out-of-band — never commit them to
-this repo, this README, or any issue/PR.
+## What is flagged
 
-Everything is keyed by `jcr:path`, which is unique and stable per freeform. That is the
-whole design: you can re-run the AEM query and replace the data at will without breaking
-your flags and notes, and without rebuilding `index.html`.
+- **CSS:** style attributes (single-, double-quoted, or unquoted), `<style>` blocks,
+  and stylesheet links. Ordinary rich-text styling counts.
+- **JavaScript:** executable inline scripts, external scripts, event handlers, and
+  `javascript:` URLs. JSON-LD, JSON data, and import maps do not count as executable scripts.
+- **Attribute hooks:** nonempty `class` and `id` values and any `data-*` attribute.
+  These are review signals, not proof that custom styling or behavior executes.
 
-## What's in the tool
+The shared HTML tokenizer skips comments and raw-text bodies when finding tags and
+attributes. Source is displayed as escaped text; scripts are never executed and
+referenced assets are never fetched. CSS declarations and selectors are analyzed
+locally; linked stylesheets and scripts are identified without following their URLs.
 
-- **Style patterns** — every inline CSS declaration found across **both** XF freeforms
-  and GP page freeforms, ranked by how many freeforms share it, with drill-down to each
-  instance (author editor link, CRXDE node link, highlighted context snippet). Filter by
-  **scope** (All / XF / Pages), by **category** (spacing, layout, sizing, type, color,
-  effect, other — spacing is preselected), and by **risk** (`!important`, negative values,
-  hardcoded px, hex colors, `position:absolute/fixed`, `@media`). Expanded rows show XF
-  instances first, then page freeforms grouped by page and capped with "show more".
-- **Selectors** — CSS selectors carrying any rule inside `<style>` blocks, across both
-  scopes (Core Component overrides like `li.cmp-tabs__tab` surface here). Same scope,
-  category, and risk filters as patterns.
-- **XF fragments** — browsable source viewer for all GP-brand XF freeforms with style
-  attributes and style blocks highlighted, each declaration coloured by category; the
-  **category lens** dims everything except the chosen category (`!important` and negative
-  values are underlined in place).
-- **GP pages** — all Georgia Power pages containing freeforms; click a page to see every
-  freeform on it with the same viewer, links, and lens.
-- **Flagged & notes** — flag any freeform and attach notes from anywhere in the tool;
-  build a working set for remediation / EDS migration review.
-- **Legacy** — notes and flagged code for freeforms that are no longer in the export.
-  Annotating a freeform snapshots its source, so when it is later deleted, moved, or
-  renamed in AEM the note keeps the code it was about. Nothing here is ever removed
-  automatically.
+## Reviewing components
 
-## Repo layout
+The Components tab filters by type, Pages/XF scope, CSS, JavaScript, attribute hooks,
+or CSS + JavaScript. Counts are component counts, not declaration counts. Results
+are paginated in groups of 50. **Show all components** includes plain and empty
+components; other selected filters still apply.
 
-| Path | Committed? | What it is |
+Select a component to see the source property for each finding, highlighted evidence,
+full source, author editor and CRXDE links, and flag/note controls. Multivalued
+properties retain indexed labels such as `description[0]`.
+
+Style patterns and Selectors retain the CSS categories, risk filters, and instance
+drill-down across all imported types. Categories and source lenses default to all
+CSS rather than spacing only. XF and GP page tabs remain available for browsing.
+
+## Trends filtering and Excel reports
+
+Open **Trends → Inline styles** to find shared combinations. The first visit starts
+at the largest exported combination (currently **12 styles together**) and
+**Minimum components = 2**. Choose any size, including 1 for individual declarations,
+or use **Next smaller size**. Matching includes ordered, nonadjacent declarations
+inside larger style attributes. It never includes CSS inside `<style>` blocks.
+
+**Find maximum**, beside Minimum components, sets the minimum to the highest
+component count for the current size and other filters. It checks all results pages
+and ignores the previous minimum. If nothing matches, the minimum stays unchanged.
+**More filters** contains component type, Pages/XF scope, CSS category and review
+notes. Search matches CSS and proposed names. Counts are recalculated within those
+filters. Results rank by distinct pages/XFs, then components, then occurrences.
+
+**Style blocks** matches complete blocks separately, retaining existing selectors and
+media conditions. **Styles together** and **Next smaller size** are hidden in that
+view; switching back restores the chosen inline size. Results are paginated in groups
+of 30. The Authoring pages column links to the Southern Company editor; expand it
+for additional pages/XFs. Expand a CSS row for exact field evidence, original element
+source, review notes and component-viewer navigation. Source is always inert text.
+
+### Export filtered results to Excel
+
+Use **Export filtered results to Excel** beside the results count. The download
+includes **every matching result across every results page**, regardless of the page
+you are viewing. The table, Find maximum and export use the same filtering and ranking
+logic. Saved drafts do not exclude matches. Empty results disable export.
+
+Files are named `gpc-trends-inline-YYYY-MM-DD.xlsx` or
+`gpc-trends-style-blocks-YYYY-MM-DD.xlsx`, with the export date in UTC.
+
+The workbook contains **Details** only, with one row per source match: a readable
+trend ID, component type, scope, component path, source field, element type, matched
+CSS, original source fragment, classes, page/XF path, and clickable Author/CRXDE links.
+Element and declaration position columns are omitted.
+
+Trend IDs look like **Inline 0001 — Color + Margin** or **Style block 0001 — Color**.
+Numbers follow the filtered results order and identify a trend within that workbook;
+all its source matches share that ID. Inline labels describe CSS properties, while
+block labels describe CSS categories. Existing internal trend identities stay intact.
+
+Export time and active filters appear above each Details table. The Matching trends
+totals row is omitted. Headers are frozen, column filters are enabled, and CSS is wrapped.
+Details use each occurrence's
+own declarations and comments; Original source fragment retains the authored opening
+tag or full style block. Nothing is merged, deduplicated, simplified or executed.
+Duplicate declarations, values, case, order, comments, `!important`, quotes and source
+line endings remain intact. Authored strings are text cells, never Excel formulas.
+Different values for the same property remain optional review notes; shorthand pairs
+such as `background` followed by `background-color` are not labeled conflicts.
+
+Long text continues in numbered columns, split at no more than 30,000 characters or
+250 line breaks per cell. Join those columns **without separators** to recover the
+full text. More than 30,000 source matches create **Details 1**, **Details 2**, etc.,
+keeping both links on every row within Excel's per-sheet limits. No results or source
+text are silently truncated. Matches
+can overlap between combinations; occurrence counts are not additive cleanup savings.
+
+Filters and evidence are captured when export starts. You may change filters while
+it runs; the workbook retains the original selection. Progress and failures appear
+beside the results. Generation runs locally in a browser worker using the vendored
+**ExcelJS 4.4.0** browser bundle, embedded by the build. It uses no runtime CDN and
+sends no content to an export server. Larger exports may take several seconds.
+
+### Temporarily hidden draft tools
+
+The stylesheet composer, selection checkboxes, draft sidebar, CSS download, saved
+proposal controls and draft progress are temporarily hidden behind the internal
+`TREND_DRAFTS_ENABLED` flag in the private template. Their implementation remains for
+later reuse. With the flag off, the app does not rewrite saved drafts or legacy
+proposals and never applies their coverage to reports, evidence or Find maximum.
+
+Local keys `component-audit-trend-draft-v2` and
+`component-audit-trend-proposals-v1` remain intact, including selectors, edited CSS,
+source references and stale rules. Flags, notes, credentials and annotation snapshots
+are unchanged. Trends use versioned encrypted analysis in `analysis.json`; older or
+missing trend data is rebuilt lazily using the same analyzer as the private build.
+Large combinatorial searches report limits rather than truncating matches. No AEM
+content, repository stylesheet or published app is changed by filtering or exporting.
+
+## Input exports
+
+Place complete QueryBuilder responses in the private build toolchain's `build/raw/`:
+
+| File | Component type | Content field |
 |---|---|---|
-| `index.html` | ✅ push | The app shell plus a small credential sentinel. No content, ~85 KB. Only changes when the template or the credentials change. |
-| `freeforms.json` | ✅ push | Freeform source keyed by `jcr:path`, encrypted + gzipped (~1.1 MB). Replace this to refresh the data. |
-| `analysis.json` | ✅ push | Derived analysis (patterns, selectors, per-freeform category/risk counts) over all scopes and properties. Paths are interned into one table and rows reference them by index, so the file stays small; regenerated alongside `freeforms.json`. |
-| `querybuilder.json` | ✅ push (optional) | Encrypted shared baseline of flags, notes, and source snapshots, keyed by `jcr:path`. Written by the Export button in the tool — never by the build. |
-| `queries.txt` | ✅ push | The AEM QueryBuilder request that produces the raw data, with how to run it and why each parameter is there. |
-| `README.md` / `.gitignore` | ✅ push | This file, and the rule that keeps build inputs out of the repo. |
-| `build/` | ❌ keep local | Everything needed to rebuild, including how-to-run docs at the top of `build.py`. **Never push** — `raw/freeform.json` is the QueryBuilder export in plaintext, `template.html` is the unencrypted app shell, and `build.py` holds the login. |
+| `freeform.json` | Freeform | `text` |
+| `contentcard.json` | Content card | `text` |
+| `herobanner.json` | Hero banner | `description` |
+| `textoverimage.json` | Text over image | `text` |
+| `thumbnailwithtext.json` | Thumbnail with text | `desc` |
 
-## Deploying
+The build reads all `raw/*.json`, infers type from filename, and accepts strings or
+arrays of strings in the mapped field. Missing fields remain as empty components.
+Only `/content/georgia-power` and `/content/experience-fragments/georgiapower` are
+included. The build prints exported, in-scope, and excluded counts per file.
 
-1. Push `index.html`, `freeforms.json`, `analysis.json` (plus this README / .gitignore).
-2. Repo → Settings → Pages → deploy from branch → `main`, root (`/`).
-3. The site serves at `https://<user>.github.io/<repo>/`.
+Responses must have `success: true`, `more: false`, and counts matching `hits`.
+Unknown filenames, invalid field types, and conflicting duplicate node paths fail
+before output is written. Identical duplicate nodes are deduplicated. See
+[queries.txt](queries.txt) for query guidance.
 
-> GitHub Pages sites are publicly reachable at their URL even when the repo is private
-> (private-repo Pages requires a paid plan; on free plans use a public repo). Either way,
-> the URL being public is fine — the content is ciphertext without the credentials. A
-> private repo additionally protects the encrypted files at the source and is preferred.
+## Rebuilding
 
-## Refreshing the data
+Requirements: Python 3.9+, `cryptography`, and Node.js 18+ (`node` on PATH, or set
+`FF_AUDIT_NODE` to its executable). The same JavaScript analyzer (no npm dependencies) runs
+in Node during builds and is embedded into the app for browser fallback.
 
-1. Re-run the QueryBuilder export on author and save it over `build/raw/freeform.json`.
-   The query, how to run it, and what every parameter is for live in
-   [`queries.txt`](queries.txt) — that file is the canonical copy, so it does not drift
-   from this README.
-
-2. Rebuild the data only — `index.html` is not touched, so the deployed app and its
-   PBKDF2 salt stay exactly as they are:
-
-   ```bash
-   cd build
-   pip install -r requirements.txt      # once
-   python3 build.py --data-only
-   ```
-
-   No credentials on the command line: they live in the `CREDENTIALS` block at the top
-   of `build.py`, which also documents how to change them. `--user` / `--password` (or
-   `FF_AUDIT_USER` / `FF_AUDIT_PASSWORD`) override them for a single run. The build
-   prints which source it used, so you can confirm before pushing.
-
-3. Commit the two regenerated JSON files. Your `querybuilder.json` keeps working: it is
-   keyed by `jcr:path`, so flags and notes reattach to the same freeforms, and anything
-   that dropped out of the new export moves into the Legacy section with the snapshot
-   taken when you annotated it.
-
-Drop `--data-only` when you have also changed `template.html` and want a new `index.html`.
-That reuses the existing salt as long as the credentials still unlock the current
-`index.html`, so an exported `querybuilder.json` keeps decrypting. Pass `--rotate-salt`
-only when you intend to invalidate it.
-
-The build prints which of those two happened; the last line is either
-`salt reused from index.html` or `NEW salt minted`.
-
-## Flags, notes & the Legacy section
-
-- Flags and notes auto-save to the **browser's localStorage** on every change (plaintext,
-  local to your machine, per-origin — the Pages URL and a local file: URL keep separate state).
-- Annotating a freeform also snapshots its full source, refreshed on load while the
-  freeform is still in the export. That snapshot is what the Legacy section renders once
-  the path disappears from `freeforms.json`.
-- To publish a shared baseline: **Flagged & notes → Export querybuilder.json**, then commit
-  the downloaded file to the repo root. On load, the tool fetches it, decrypts it with the
-  session key, and merges with local changes. Merging is per field: the newer timestamp
-  wins for the flag and the note, and a snapshot is never dropped just because the other
-  side lacks one.
-- A `flags.json` from an older build is still read on load and on import, so an existing
-  committed baseline migrates by itself. You can delete it once you have exported
-  `querybuilder.json`.
-- Nothing is pruned automatically. Each legacy entry has its own **Delete**, and the
-  section header has **Delete all legacy** for clearing a batch once you are done with
-  them; both confirm first, and both point out that the snapshot is the last copy of
-  source that is no longer in AEM. Live flags and notes are never touched by either. If a
-  path reappears in a later export the entry leaves the Legacy section on its own.
-- If the browser runs out of storage, the tool sheds snapshots it can rebuild from
-  `freeforms.json` first and tells you; an orphan's snapshot is the last copy and is
-  never shed.
-
-## Running it locally
-
-The data files are fetched at runtime, and browsers block `fetch` between `file://`
-pages, so serve the folder instead:
-
-```bash
-cd <repo root> && python3 -m http.server 8000   # then open http://localhost:8000/
+```sh
+cd build
+pip install -r requirements.txt
+node test_analyzer.cjs
+node test_trends.cjs
+node test_trend_export.cjs
+python3 test_build.py
+python3 build.py                 # full app + data rebuild
+python3 build.py --data-only     # data refresh after the current app is deployed
 ```
 
-Opening `index.html` straight off disk still works: the unlock screen notices the fetch
-failed and offers a file picker for `freeforms.json` and `analysis.json`.
+Optional browser integration checks require Playwright and installed Chrome: serve the
+deploy folder on localhost:8765, then run `node build/test_browser.cjs` from the repo
+root. Set `PLAYWRIGHT_MODULE` if Playwright is installed outside the normal module path.
+Excel checks round-trip source evidence, links, long-text continuations and multiple
+detail sheets, including the full dataset and missing-analysis fallback.
+The test reads existing credentials into process memory and uses the login form; it
+does not serve credentials or write test notes to your normal browser profile.
 
-## Rotating credentials
+Use `--input raw/` or `--input raw/herobanner.json` to select a directory or one named
+export. A single-file build replaces the dataset with that file's components; use
+the directory for the full audit. Add new type-to-property mappings in `build.py`
+before importing a new filename.
 
-Edit the `CREDENTIALS` block at the top of `build/build.py`, run a full build (no
-`--data-only`), and push the new `index.html` plus the two data files. Old credentials stop
-working immediately (they can no longer derive the key).
-A new salt is minted in this case, so a `querybuilder.json` exported under the old
-credentials will not decrypt — your localStorage copy is plaintext and merges
-automatically, so open the new build once, confirm the Flagged and Legacy sections look
-right, then re-export and commit.
+The build reuses the existing credential salt when credentials still unlock
+`index.html`. Do not use `--rotate-salt` unless intentionally rotating it. Credentials
+remain in the private build toolchain; never copy that toolchain to public git history.
 
-## Security model (honest version)
+## Files and annotations
 
-- The data files and `querybuilder.json` are real ciphertext — there is nothing readable
-  in the repo or on the wire without the credentials.
-- `querybuilder.json` contains freeform source for every path you annotated, so treat it
-  as exactly as sensitive as the data files. It stays encrypted for that reason.
-- Anyone with the URL **and** the credentials has everything; treat the password like
-  the content itself.
-- Because the ciphertext is public, offline brute-force against a weak password is
-  possible in principle. The current password is adequate for keeping the site out of
-  crawlers and casual visitors, not for high-sensitivity data. Rotate to a longer
-  passphrase if the audience for this repo widens.
-- Login persists per browser tab (sessionStorage); closing the tab locks the tool.
-  UI state (tab, filters, selections) persists across reloads via localStorage.
+- `index.html`: app shell, shared analyzer and local Excel worker bundle; no authored source.
+- `freeforms.json`: encrypted, compressed source keyed by `jcr:path`. The historical
+  filename is retained; records now include `componentType`, `fields`, and compatible `text`.
+- `analysis.json`: encrypted CSS patterns, selectors, per-component findings, import totals, and versioned trend groups.
+- `querybuilder.json`: optional encrypted shared flags, notes, and snapshots, exported
+  by the UI. Builds never overwrite this file.
+- `build/`: private toolchain, tests, and plaintext raw exports. Never publish publicly.
+
+Flags and notes retain their existing browser storage keys and node identities.
+Plain components are retained in the dataset even when hidden, so their annotations
+stay live. Removed nodes retain snapshots under Legacy. Old text-only snapshots and
+source records remain readable. UI filter state has a new key so the updated app
+initially opens Components; saved flags and notes are unaffected.
+
+Flags/notes auto-save in localStorage, which is plaintext and per browser origin.
+Export `querybuilder.json` to share an encrypted baseline. The application merges
+shared and local annotations by timestamp. Closing the tab clears the session login.
+
+## Preview and publication
+
+Serve the deploy folder with `python3 -m http.server 8000`, then visit localhost:8000.
+Opening an HTML file directly offers manual encrypted-data file pickers if fetch fails.
+
+Publish only the app shell, encrypted data, optional encrypted annotations, and public
+docs. `build/publish.py` remains a private-repository mirror tool: it includes every
+`build/raw/*.json` unless `--no-raw` is passed, and refuses to target its own source
+folder. Use `--dry-run` to inspect the mirror before publishing. It does not rebuild.
+
+Data and shared annotations use AES-256-GCM, with a key derived from credentials via
+PBKDF2. Anyone with those credentials can read the full dataset. Browser-local flags
+and snapshots are not encrypted. Keep raw exports and credentials private.

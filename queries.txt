@@ -1,7 +1,28 @@
-Freeform Style Audit — source query
+Component Code Audit — source queries
 ===================================
 
-This is the AEM QueryBuilder request that produces the audit's raw data. Run it whenever
+
+MULTI-COMPONENT IMPORT
+----------------------
+Save one complete QueryBuilder response per component type in build/raw/.
+Use the query below as a template: replace property.value with the actual resource
+ type for the component, and replace the content property in p.properties as follows:
+
+  filename                 content property
+  freeform.json            text
+  contentcard.json         text
+  herobanner.json           description
+  textoverimage.json       text
+  thumbnailwithtext.json   desc
+
+Keep jcr:path in p.properties, p.limit=-1, and the existing two scope paths.
+The current exports do not contain sling:resourceType; filenames supply the type.
+Do not guess a component's resource type from a node name: verify it on the author.
+The full build scans raw/*.json; --input accepts one file or an export directory.
+String-array properties are supported and retain indexed field names in findings.
+The build rejects incomplete exports and conflicting duplicate paths.
+
+This is the freeform AEM QueryBuilder request that produces one of the audit's raw exports. Run it whenever
 you want fresh content, save the response over build/raw/freeform.json, and rebuild the
 data files (see README, "Refreshing the data").
 
@@ -90,7 +111,7 @@ p.properties=jcr:path%20text
 WHAT THE BUILD DOES WITH IT
 ---------------------------
 
-build.py reads the hits array, keeps anything under /content/georgia-power or
+build.py reads the hits arrays from every raw/*.json export, keeps anything under /content/georgia-power or
 /content/experience-fragments/georgiapower, and writes two encrypted files: freeforms.json
 (the source, keyed by jcr:path) and analysis.json (the derived spacing patterns and
 selectors, which reference those same paths).
