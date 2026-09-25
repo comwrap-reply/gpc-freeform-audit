@@ -71,13 +71,13 @@ trend ID, component type, scope, component path, source field, element type, mat
 CSS, original source fragment, classes, page/XF path, and clickable Author/CRXDE links.
 Element and declaration position columns are omitted.
 
-Trend IDs look like **Inline 0001 — Color + Margin** or **Style block 0001 — Color**.
-Numbers follow the filtered results order and identify a trend within that workbook;
-all its source matches share that ID. Inline labels describe CSS properties, while
-block labels describe CSS categories. Existing internal trend identities stay intact.
+Trend IDs are **Trend 1**, **Trend 2**, **Trend 3**, and so on for both inline styles
+and style blocks. Numbers follow the filtered results order and identify a trend
+within that workbook; all its source matches share that ID. Existing internal trend
+identities stay intact.
 
 Export time and active filters appear above each Details table. The Matching trends
-totals row is omitted. Headers are frozen, column filters are enabled, and CSS is wrapped.
+totals row and Reading this workbook row are omitted. Headers are frozen, column filters are enabled, and CSS is wrapped.
 Details use each occurrence's
 own declarations and comments; Original source fragment retains the authored opening
 tag or full style block. Nothing is merged, deduplicated, simplified or executed.
