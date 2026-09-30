@@ -129,8 +129,8 @@ Place complete QueryBuilder responses in the private build toolchain's `build/ra
 
 The build reads all `raw/*.json`, infers type from filename, and accepts strings or
 arrays of strings in the mapped field. Missing fields remain as empty components.
-Only `/content/georgia-power` and `/content/experience-fragments/georgiapower` are
-included. The build prints exported, in-scope, and excluded counts per file.
+The current raw exports are scoped to `/content/georgia-power`. The build prints
+exported, in-scope, and excluded counts per file.
 
 Responses must have `success: true`, `more: false`, and counts matching `hits`.
 Unknown filenames, invalid field types, and conflicting duplicate node paths fail

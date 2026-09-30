@@ -15,7 +15,7 @@ Use the query below as a template: replace property.value with the actual resour
   textoverimage.json       text
   thumbnailwithtext.json   desc
 
-Keep jcr:path in p.properties, p.limit=-1, and the existing two scope paths.
+Keep jcr:path in p.properties, p.limit=-1, and the /content/georgia-power scope path.
 The current exports do not contain sling:resourceType; filenames supply the type.
 Do not guess a component's resource type from a node name: verify it on the author.
 The full build scans raw/*.json; --input accepts one file or an export directory.
@@ -33,7 +33,7 @@ THE QUERY
 Prefix it with the host or IP of the environment you want to read, then paste the whole
 thing into a browser tab:
 
-  <environment host or IP>/bin/querybuilder.json?type=nt:unstructured&property=sling:resourceType&property.value=global/components/content/freeform&group.p.or=true&group.1_path=/content/georgia-power&group.2_path=/content/experience-fragments/georgiapower&p.limit=-1&p.hits=selective&p.properties=jcr:path%20text
+  <environment host or IP>/bin/querybuilder.json?type=nt:unstructured&path=/content/georgia-power&property=sling:resourceType&property.value=global/components/content/freeform&p.limit=-1&p.hits=selective&p.properties=jcr:path%20text
 
 Use an AUTHOR environment, not publish. Author holds unpublished and draft pages, and the
 point of the audit is to catch inline styling before it ships, so the wider net is the
@@ -73,7 +73,7 @@ WHY EACH PARAMETER IS THERE
 type=nt:unstructured
   Component nodes under a page's jcr:content are nt:unstructured. Naming the node type
   keeps the traversal narrow and fast; without it the query considers every node type in
-  both trees.
+  the page subtree.
 
 property=sling:resourceType
 property.value=global/components/content/freeform
@@ -81,15 +81,10 @@ property.value=global/components/content/freeform
   that resource type. It is an exact match, so a renamed or proxied component would not be
   found — worth remembering if the component ever moves.
 
-group.p.or=true
-group.1_path=/content/georgia-power
-group.2_path=/content/experience-fragments/georgiapower
-  Two subtrees to search: Georgia Power pages, and Georgia Power Experience Fragments.
-  The group.p.or=true is load-bearing. Predicates in a group are ANDed by default, and no
-  node can live under both paths at once, so without it the query returns nothing at all.
-  Widen group.2_path to /content/experience-fragments if you ever want every XF brand; the
-  build filters XFs down to the georgiapower brand regardless, so the broader path is
-  harmless but slower.
+path=/content/georgia-power
+  Search the Georgia Power page subtree. The current exports intentionally exclude
+  Experience Fragments. To include Georgia Power XFs again, use an OR group containing
+  this path and /content/experience-fragments/georgiapower.
 
 p.limit=-1
   No cap. The default is 10, which is the other classic way to end up with a tiny export.
@@ -111,8 +106,8 @@ p.properties=jcr:path%20text
 WHAT THE BUILD DOES WITH IT
 ---------------------------
 
-build.py reads the hits arrays from every raw/*.json export, keeps anything under /content/georgia-power or
-/content/experience-fragments/georgiapower, and writes two encrypted files: freeforms.json
+build.py reads the hits arrays from every raw/*.json export, keeps the current results
+under /content/georgia-power, and writes two encrypted files: freeforms.json
 (the source, keyed by jcr:path) and analysis.json (the derived spacing patterns and
 selectors, which reference those same paths).
 
