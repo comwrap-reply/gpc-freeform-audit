@@ -1,129 +1,134 @@
-Component Code Audit — source queries
-===================================
+Component Code Audit — site refresh queries
+===========================================
 
 
-MULTI-COMPONENT IMPORT
-----------------------
-Save one complete QueryBuilder response per component type in build/raw/.
-Use the query below as a template: replace property.value with the actual resource
- type for the component, and replace the content property in p.properties as follows:
+AUTOMATED REFRESH
+-----------------
+Run this from the private repository's build directory:
 
-  filename                 content property
-  freeform.json            text
-  contentcard.json         text
-  herobanner.json           description
-  textoverimage.json       text
-  thumbnailwithtext.json   desc
+  python3 update_site.py <site-id> --cookie-file /path/to/cookies.txt
 
-Keep jcr:path in p.properties, p.limit=-1, and the /content/georgia-power scope path.
-The current exports do not contain sling:resourceType; filenames supply the type.
-Do not guess a component's resource type from a node name: verify it on the author.
-The full build scans raw/*.json; --input accepts one file or an export directory.
-String-array properties are supported and retain indexed field names in findings.
-The build rejects incomplete exports and conflicting duplicate paths.
+One-time dependency setup (the updater will automatically use build/.venv):
 
-This is the freeform AEM QueryBuilder request that produces one of the audit's raw exports. Run it whenever
-you want fresh content, save the response over build/raw/freeform.json, and rebuild the
-data files (see README, "Refreshing the data").
+  python3 -m venv .venv
+  .venv/bin/python -m pip install -r requirements.txt
 
+For example:
 
-THE QUERY
----------
+  python3 update_site.py georgia-power --cookie-file ~/Downloads/cookies.txt
+  python3 update_site.py alabama-power --print-urls
+  python3 update_site.py
 
-Prefix it with the host or IP of the environment you want to read, then paste the whole
-thing into a browser tab:
+Omit the site id for an interactive menu. The updater calls
+https://author.southerncompany.com, runs the five component queries in order, and
+waits 5 seconds between requests. It validates all five responses before replacing
+build/raw/<site-id>/, rebuilds freeforms.json and analysis.json, and copies those two
+encrypted files to the sibling gpc-freeform-audit checkout.
 
-  <environment host or IP>/bin/querybuilder.json?type=nt:unstructured&path=/content/georgia-power&property=sling:resourceType&property.value=global/components/content/freeform&p.limit=-1&p.hits=selective&p.properties=jcr:path%20text
-
-Use an AUTHOR environment, not publish. Author holds unpublished and draft pages, and the
-point of the audit is to catch inline styling before it ships, so the wider net is the
-right one. Publish would silently hide anything not yet activated.
+Use --no-build to fetch only, --no-sync to rebuild only the private checkout, or
+--delay N to override the 5-second interval. --print-urls performs no requests.
 
 
-HOW TO RUN IT
--------------
+AUTHENTICATION
+--------------
+The author is normally SSO-protected. Supply a current authenticated browser session
+using one of these methods:
 
-1. Log in to that author environment in your browser first. QueryBuilder authenticates
-   with your normal session cookie, so there is nothing to configure — but an anonymous
-   request returns an empty or partial result rather than an error, which is the usual
-   reason a fresh export comes back suspiciously small.
+  --cookie-file FILE   Netscape-format cookies.txt exported from the logged-in browser
+  AEM_COOKIE='...'     the Cookie request header copied from browser developer tools
 
-2. Paste the prefixed URL into a tab in that same browser and let it finish. It returns
-   JSON, a few megabytes of it, so the tab may sit for several seconds.
+The cookie value is intentionally not stored in the project. HTTP Basic auth is also
+available with PROD_USERNAME and PROD_PASSWORD (or AEM_USER and AEM_PASSWORD), plus
+the --basic-user and --basic-password command-line options.
 
-3. Save the response as build/raw/freeform.json (Save Page As, or right-click → Save).
-   Do not reformat or pretty-print it; the build reads it as-is.
+If your shell already exports the production variables, no authentication arguments
+are needed:
 
-4. Sanity check the top of the file before rebuilding:
-
-     "success": true      the query ran
-     "results": 3826      how many freeforms came back — compare with last time
-     "more": false        nothing was truncated
-
-   If "more" is true, the limit was applied and you are missing rows: confirm
-   p.limit=-1 survived the copy/paste.
-
-To experiment with the predicates interactively, use the QueryBuilder debugger on the same
-environment: /libs/cq/search/content/querydebug.html
+  export PROD_USERNAME="sbadon"
+  export PROD_PASSWORD
+  python3 update_site.py alabama-power
+If AEM returns a login page, the updater stops without replacing the site's previous
+exports.
 
 
-WHY EACH PARAMETER IS THERE
----------------------------
-
-type=nt:unstructured
-  Component nodes under a page's jcr:content are nt:unstructured. Naming the node type
-  keeps the traversal narrow and fast; without it the query considers every node type in
-  the page subtree.
-
-property=sling:resourceType
-property.value=global/components/content/freeform
-  This pair is what actually selects freeforms: every instance of the component carries
-  that resource type. It is an exact match, so a renamed or proxied component would not be
-  found — worth remembering if the component ever moves.
-
-path=/content/georgia-power
-  Search the Georgia Power page subtree. The current exports intentionally exclude
-  Experience Fragments. To include Georgia Power XFs again, use an OR group containing
-  this path and /content/experience-fragments/georgiapower.
-
-p.limit=-1
-  No cap. The default is 10, which is the other classic way to end up with a tiny export.
-
-p.hits=selective
-p.properties=jcr:path%20text
-  Return only the two properties the audit needs instead of a full dump of every node.
-  This is the difference between a ~7 MB response and an enormous one. The %20 is the
-  URL-encoded space separating the two property names — keep it encoded, since a literal
-  space in a query string gets mangled by some clients.
-
-  jcr:path  the node's full repository path. This is the audit's identity for a freeform:
-            it is unique, and it is what flags, notes and snapshots are keyed by, which is
-            why refreshing this data does not lose your annotations.
-  text      the freeform's rich-text property — the HTML the audit scans for style
-            attributes, <style> blocks and spacing declarations.
-
-
-WHAT THE BUILD DOES WITH IT
----------------------------
-
-build.py reads the hits arrays from every raw/*.json export, keeps the current results
-under /content/georgia-power, and writes two encrypted files: freeforms.json
-(the source, keyed by jcr:path) and analysis.json (the derived spacing patterns and
-selectors, which reference those same paths).
-
-Because everything is keyed by jcr:path, a re-query is safe: freeforms that still exist
-reattach to their flags and notes, freeforms that have been deleted or renamed in AEM move
-into the tool's Legacy section with the snapshot taken when they were annotated, and newly
-added freeforms simply appear. Nothing points at a row number, so nothing drifts.
-
-
-NOTES
+SITES
 -----
 
-- The response is plaintext page source. build/ is gitignored for that reason — the
-  repo only ever carries the encrypted output. Don't commit the raw export.
-- Counts drifting by a handful between exports is normal (authors add and remove
-  freeforms). A large drop usually means an auth or path problem, not a content change.
-- The query has no date or version filter, so it always returns current content. There is
-  no way to ask AEM for "what this looked like last month" — the Legacy section's
-  snapshots are the only history the audit keeps.
+  site id                 content path
+  southerntelecom         /content/southerntelecom
+  southernpower           /content/southernpower
+  alabama-power           /content/alabama-power
+  georgia-power           /content/georgia-power
+  mississippi-power       /content/mississippi-power
+  southern-nuclear        /content/southern-nuclear
+  southerncompany         /content/southerncompany
+  florida-natural-gas     /content/florida-natural-gas
+  agl                     /content/southern-co-gas/agl
+  nicor-gas               /content/southern-co-gas/nicor-gas
+  virginianaturalgas      /content/southern-co-gas/virginianaturalgas
+  chattanooga-gas         /content/southern-co-gas/chattanooga-gas
+  southerncompanygas      /content/southern-co-gas/southerncompanygas
+  1minute-kitchen         /content/southern-co-gas/1minute-kitchen
+
+The canonical catalog is build/sites.json. Directory names below build/raw/ must use
+these site ids exactly.
+
+
+COMPONENT EXPORTS
+-----------------
+
+  filename                 resource type                                  content property
+  freeform.json            global/components/content/freeform              text
+  contentcard.json         global/components/content/contentcard           text
+  herobanner.json          global/components/content/herobanner            description
+  textoverimage.json       global/components/content/textoverimage         text
+  thumbnailwithtext.json   global/components/content/thumbnailwithtext     desc
+
+Every response must have success: true, more: false, offset: 0, and results/total
+matching the hits array. Empty results are valid. String-array content properties are
+supported and retain indexed field names in the audit.
+
+
+MANUAL QUERY TEMPLATE
+---------------------
+Replace SITE_PATH, RESOURCE_TYPE, and CONTENT_PROPERTY:
+
+  https://author.southerncompany.com/bin/querybuilder.json?type=nt:unstructured&path=SITE_PATH&property=sling:resourceType&property.value=RESOURCE_TYPE&p.limit=-1&p.hits=selective&p.properties=jcr:path%20CONTENT_PROPERTY
+
+Freeform example for Georgia Power:
+
+  https://author.southerncompany.com/bin/querybuilder.json?type=nt:unstructured&path=/content/georgia-power&property=sling:resourceType&property.value=global/components/content/freeform&p.limit=-1&p.hits=selective&p.properties=jcr:path%20text
+
+Use an author environment, not publish. Author includes draft and unpublished content.
+Log in first and run manual URLs in the same browser session.
+
+
+WHY THE PARAMETERS MATTER
+-------------------------
+
+type=nt:unstructured
+  Restricts traversal to component nodes instead of every node type.
+
+path=<site content path>
+  Keeps one refresh isolated to the selected site's subtree. The updater also rejects
+  any returned path outside that boundary.
+
+property=sling:resourceType
+property.value=<component resource type>
+  Selects the exact component implementation. Node names are not used to infer type.
+
+p.limit=-1
+  Prevents the default ten-result cap. The updater rejects truncated responses.
+
+p.hits=selective
+p.properties=jcr:path%20<content property>
+  Returns only the stable node identity and complete authored source needed by the
+  audit. Flags, notes, and snapshots remain keyed by jcr:path across refreshes.
+
+
+STORAGE AND SAFETY
+------------------
+Raw responses are plaintext authored content and belong only in the private repository.
+The public repository receives encrypted freeforms.json and analysis.json, never
+build/raw/, update_site.py, sites.json, or build.py. A failed query leaves the previous
+five-file site batch in place.

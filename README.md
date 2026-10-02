@@ -1,9 +1,10 @@
 # Component Code Audit
 
-Audit authored CSS, JavaScript, and attribute hooks across Georgia Power pages and
-Experience Fragments. The default **Components** view hides plain HTML and empty
-components. “Added” means present in the exported authored content; this is not a
-change-history comparison or a live-page runtime audit.
+Audit authored CSS, JavaScript, and attribute hooks across Southern Company sites.
+Use the site dropdown to switch among the configured content roots; every view and
+report is scoped to that selected site. The default **Components** view hides plain
+HTML and empty components. “Added” means present in the exported authored content;
+this is not a change-history comparison or a live-page runtime audit.
 
 ## What is flagged
 
@@ -32,7 +33,7 @@ properties retain indexed labels such as `description[0]`.
 
 Style patterns and Selectors retain the CSS categories, risk filters, and instance
 drill-down across all imported types. Categories and source lenses default to all
-CSS rather than spacing only. XF and GP page tabs remain available for browsing.
+CSS rather than spacing only. XF and Pages tabs remain available for browsing.
 
 ## Trends filtering and Excel reports
 
@@ -63,8 +64,8 @@ includes **every matching result across every results page**, regardless of the 
 you are viewing. The table, Find maximum and export use the same filtering and ranking
 logic. Saved drafts do not exclude matches. Empty results disable export.
 
-Files are named `gpc-trends-inline-YYYY-MM-DD.xlsx` or
-`gpc-trends-style-blocks-YYYY-MM-DD.xlsx`, with the export date in UTC.
+Files are named `<site-id>-trends-inline-YYYY-MM-DD.xlsx` or
+`<site-id>-trends-style-blocks-YYYY-MM-DD.xlsx`, with the export date in UTC.
 
 The workbook contains **Details** only, with one row per source match: a readable
 trend ID, component type, scope, component path, source field, element type, matched
@@ -117,7 +118,8 @@ content, repository stylesheet or published app is changed by filtering or expor
 
 ## Input exports
 
-Place complete QueryBuilder responses in the private build toolchain's `build/raw/`:
+The private updater stores complete QueryBuilder responses under
+`build/raw/<site-id>/`:
 
 | File | Component type | Content field |
 |---|---|---|
@@ -127,10 +129,11 @@ Place complete QueryBuilder responses in the private build toolchain's `build/ra
 | `textoverimage.json` | Text over image | `text` |
 | `thumbnailwithtext.json` | Thumbnail with text | `desc` |
 
-The build reads all `raw/*.json`, infers type from filename, and accepts strings or
-arrays of strings in the mapped field. Missing fields remain as empty components.
-The current raw exports are scoped to `/content/georgia-power`. The build prints
-exported, in-scope, and excluded counts per file.
+The build recursively reads `raw/**/*.json`, infers type from filename, and accepts
+strings or arrays of strings in the mapped field. Missing fields remain as empty
+components. The containing directory identifies the site and prevents paths from one
+site being imported into another. Legacy flat Georgia Power exports remain supported
+until a `raw/georgia-power/` refresh replaces them.
 
 Responses must have `success: true`, `more: false`, and counts matching `hits`.
 Unknown filenames, invalid field types, and conflicting duplicate node paths fail
@@ -143,16 +146,43 @@ Requirements: Python 3.9+, `cryptography`, and Node.js 18+ (`node` on PATH, or s
 `FF_AUDIT_NODE` to its executable). The same JavaScript analyzer (no npm dependencies) runs
 in Node during builds and is embedded into the app for browser fallback.
 
+Create the private build environment once. The updater automatically uses this
+environment for rebuilding even when it is launched with `python3`:
+
 ```sh
 cd build
-pip install -r requirements.txt
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+```sh
+cd build
 node test_analyzer.cjs
 node test_trends.cjs
 node test_trend_export.cjs
 python3 test_build.py
+python3 test_update_site.py
 python3 build.py                 # full app + data rebuild
 python3 build.py --data-only     # data refresh after the current app is deployed
 ```
+
+To refresh one site from `https://author.southerncompany.com`, run the site updater.
+It fetches all five component types with a 5-second pause between requests, validates
+the complete batch before replacing that site's raw files, rebuilds the encrypted
+data, and syncs it to the sibling public checkout:
+
+```sh
+python3 update_site.py georgia-power --cookie-file /path/to/cookies.txt
+python3 update_site.py                         # interactive site menu
+python3 update_site.py alabama-power --print-urls
+```
+
+`cookies.txt` must use Netscape cookie-file format and come from an authenticated
+author session. As an alternative, set `AEM_COOKIE` to the browser's Cookie request
+header. Existing `PROD_USERNAME` and `PROD_PASSWORD` environment variables are also
+accepted for HTTP Basic authentication, so no authentication arguments are needed
+when those are already exported. See [queries.txt](queries.txt) for every site id and
+authentication option.
 
 Optional browser integration checks require Playwright and installed Chrome: serve the
 deploy folder on localhost:8765, then run `node build/test_browser.cjs` from the repo
@@ -162,10 +192,9 @@ detail sheets, including the full dataset and missing-analysis fallback.
 The test reads existing credentials into process memory and uses the login form; it
 does not serve credentials or write test notes to your normal browser profile.
 
-Use `--input raw/` or `--input raw/herobanner.json` to select a directory or one named
-export. A single-file build replaces the dataset with that file's components; use
-the directory for the full audit. Add new type-to-property mappings in `build.py`
-before importing a new filename.
+Use `--input raw/` for the complete audit or point at one export while developing.
+Add new type-to-property mappings in `build.py` and `update_site.py` before importing
+a new filename.
 
 The build reuses the existing credential salt when credentials still unlock
 `index.html`. Do not use `--rotate-salt` unless intentionally rotating it. Credentials
@@ -176,16 +205,16 @@ remain in the private build toolchain; never copy that toolchain to public git h
 - `index.html`: app shell, shared analyzer and local Excel worker bundle; no authored source.
 - `freeforms.json`: encrypted, compressed source keyed by `jcr:path`. The historical
   filename is retained; records now include `componentType`, `fields`, and compatible `text`.
-- `analysis.json`: encrypted CSS patterns, selectors, per-component findings, import totals, and versioned trend groups.
+- `analysis.json`: encrypted per-site CSS patterns, selectors, per-component findings, import totals, and versioned trend groups.
 - `querybuilder.json`: optional encrypted shared flags, notes, and snapshots, exported
   by the UI. Builds never overwrite this file.
-- `build/`: private toolchain, tests, and plaintext raw exports. Never publish publicly.
+- `build/`: private toolchain, site catalog, updater, tests, and plaintext raw exports. Never publish publicly.
 
 Flags and notes retain their existing browser storage keys and node identities.
 Plain components are retained in the dataset even when hidden, so their annotations
-stay live. Removed nodes retain snapshots under Legacy. Old text-only snapshots and
-source records remain readable. UI filter state has a new key so the updated app
-initially opens Components; saved flags and notes are unaffected.
+stay live. Removed nodes retain snapshots under Legacy for their own site. Old
+text-only snapshots and source records remain readable. UI filter state is saved per
+site; saved flags and notes remain globally path-keyed and are unaffected.
 
 Flags/notes auto-save in localStorage, which is plaintext and per browser origin.
 Export `querybuilder.json` to share an encrypted baseline. The application merges
@@ -198,7 +227,7 @@ Opening an HTML file directly offers manual encrypted-data file pickers if fetch
 
 Publish only the app shell, encrypted data, optional encrypted annotations, and public
 docs. `build/publish.py` remains a private-repository mirror tool: it includes every
-`build/raw/*.json` unless `--no-raw` is passed, and refuses to target its own source
+`build/raw/**/*.json` unless `--no-raw` is passed, and refuses to target its own source
 folder. Use `--dry-run` to inspect the mirror before publishing. It does not rebuild.
 
 Data and shared annotations use AES-256-GCM, with a key derived from credentials via
