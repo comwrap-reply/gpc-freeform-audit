@@ -35,6 +35,28 @@ Style patterns and Selectors retain the CSS categories, risk filters, and instan
 drill-down across all imported types. Categories and source lenses default to all
 CSS rather than spacing only. XF and Pages tabs remain available for browsing.
 
+## Third-party services
+
+Open **Third-party services** to identify services such as YouTube, Vimeo, Formstack,
+Brightcove, Google Maps, and social widgets in the selected site's exported content.
+Providers are grouped by purpose, with distinct component and page/XF counts. The tab
+includes all five component types, including iframe-only components that have no
+CSS, JavaScript, or attribute-hook review signals.
+
+**Embeds & integrations** is the default view. **Ordinary links** and **Possible
+JavaScript references** are separate views; a link or a URL string does not establish
+that a service executes. Use search, purpose, component type, and Pages/XF filters to
+narrow the results. Expand a provider for exact source evidence, source-field labels,
+and links to the component viewer, Author, and CRXDE. Filter state is saved per site.
+
+Provider rules use parsed hostnames and explicit domain/endpoint matches. Unmatched
+hostnames appear under **Unclassified hosts**, which may contain internal and external
+hosts. Comments and plain-text brand mentions are ignored. The scanner reads source
+without executing JavaScript or loading embeds; it cannot establish runtime behavior
+or detect URLs assembled dynamically by scripts. Older analysis files are recomputed
+with the same scanner in the browser. Raw source and findings remain encrypted in
+the deployed data files.
+
 ## Trends filtering and Excel reports
 
 Open **Trends → Inline styles** to find shared combinations. The first visit starts
@@ -118,8 +140,9 @@ content, repository stylesheet or published app is changed by filtering or expor
 
 ## Input exports
 
-The private updater stores complete QueryBuilder responses under
-`build/raw/<site-id>/`:
+The private updaters store complete QueryBuilder responses under
+`build/raw/<site-id>/` for website pages and `build/raw/<site-id>/xf/` for Experience
+Fragments:
 
 | File | Component type | Content field |
 |---|---|---|
@@ -131,9 +154,11 @@ The private updater stores complete QueryBuilder responses under
 
 The build recursively reads `raw/**/*.json`, infers type from filename, and accepts
 strings or arrays of strings in the mapped field. Missing fields remain as empty
-components. The containing directory identifies the site and prevents paths from one
-site being imported into another. Legacy flat Georgia Power exports remain supported
-until a `raw/georgia-power/` refresh replaces them.
+components. The containing directories identify both site and source scope. Page
+exports must remain under the site's website content path; XF exports must remain
+under that site's explicitly approved Experience Fragment roots. A response from any
+other website or fragment tree is rejected. Legacy flat Georgia Power exports remain
+supported until a `raw/georgia-power/` refresh replaces them.
 
 Responses must have `success: true`, `more: false`, and counts matching `hits`.
 Unknown filenames, invalid field types, and conflicting duplicate node paths fail
@@ -158,10 +183,12 @@ python3 -m venv .venv
 ```sh
 cd build
 node test_analyzer.cjs
+node test_services.cjs
 node test_trends.cjs
 node test_trend_export.cjs
 python3 test_build.py
 python3 test_update_site.py
+python3 test_update_experience_fragments.py
 python3 build.py                 # full app + data rebuild
 python3 build.py --data-only     # data refresh after the current app is deployed
 ```
@@ -184,6 +211,23 @@ accepted for HTTP Basic authentication, so no authentication arguments are neede
 when those are already exported. See [queries.txt](queries.txt) for every site id and
 authentication option.
 
+To refresh only the Experience Fragments assigned to a site, use the XF updater. It
+uses the same authentication, five component mappings, 5-second delay, rebuild, and
+public-data sync. Results are stored separately under `raw/<site-id>/xf/`:
+
+```sh
+python3 update_experience_fragments.py georgia-power
+python3 update_experience_fragments.py agl
+python3 update_experience_fragments.py alabama-power --print-urls
+python3 update_experience_fragments.py --all
+```
+
+The XF paths come only from `sites.json`, which was mapped from the supplied
+`/content/experience-fragments` tree. The updater validates every returned `jcr:path`
+against the selected site's roots before replacing any files. `--all` runs all 70
+site/component queries sequentially, waits 5 seconds between every query, and performs
+one encrypted rebuild and public-data sync after all 14 sites have finished.
+
 Optional browser integration checks require Playwright and installed Chrome: serve the
 deploy folder on localhost:8765, then run `node build/test_browser.cjs` from the repo
 root. Set `PLAYWRIGHT_MODULE` if Playwright is installed outside the normal module path.
@@ -191,10 +235,13 @@ Excel checks round-trip source evidence, links, long-text continuations and mult
 detail sheets, including the full dataset and missing-analysis fallback.
 The test reads existing credentials into process memory and uses the login form; it
 does not serve credentials or write test notes to your normal browser profile.
+`node build/test_services_browser.cjs` runs focused service-tab checks against the
+same local preview, including filters, site isolation, escaped evidence and older
+analysis fallback.
 
 Use `--input raw/` for the complete audit or point at one export while developing.
-Add new type-to-property mappings in `build.py` and `update_site.py` before importing
-a new filename.
+Add new type-to-property mappings in `build.py`, `update_site.py`, and
+`update_experience_fragments.py` before importing a new filename.
 
 The build reuses the existing credential salt when credentials still unlock
 `index.html`. Do not use `--rotate-salt` unless intentionally rotating it. Credentials

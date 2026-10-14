@@ -29,6 +29,42 @@ Use --no-build to fetch only, --no-sync to rebuild only the private checkout, or
 --delay N to override the 5-second interval. --print-urls performs no requests.
 
 
+EXPERIENCE FRAGMENT REFRESH
+---------------------------
+Use the separate XF updater so website paths and Experience Fragment paths remain
+physically separate:
+
+  python3 update_experience_fragments.py <site-id>
+  python3 update_experience_fragments.py alabama-power --print-urls
+  python3 update_experience_fragments.py --all
+
+It uses the same credentials, component mappings, 5-second delay, encrypted rebuild,
+and public-data sync as update_site.py. Files are written to
+build/raw/<site-id>/xf/. Every returned jcr:path must be inside the selected site's
+approved XF roots or the entire five-file update is rejected.
+
+The --all form runs 70 queries sequentially with 69 five-second gaps (5 minutes
+45 seconds of deliberate waiting), then rebuilds and syncs once. Query and download
+time is additional.
+
+Approved Experience Fragment roots from the supplied repository tree:
+
+  southerntelecom         /content/experience-fragments/southerntelecom
+  southernpower           /content/experience-fragments/southernpower
+  alabama-power           /content/experience-fragments/alabama-power
+  georgia-power           /content/experience-fragments/georgiapower
+  mississippi-power       /content/experience-fragments/mississippi_power
+  southern-nuclear        /content/experience-fragments/southern-nuclear
+  southerncompany         /content/experience-fragments/southerncompany
+  florida-natural-gas     /content/experience-fragments/florida-natural-gas
+  agl                     /content/experience-fragments/southern_company_gas/agl
+  nicor-gas               /content/experience-fragments/southern_company_gas/nicor-gas
+  virginianaturalgas      /content/experience-fragments/southern_company_gas/vng
+  chattanooga-gas         /content/experience-fragments/southern_company_gas/chattanooga_gas
+  southerncompanygas      /content/experience-fragments/southern_company_gas/southerncompanygas
+  1minute-kitchen         /content/experience-fragments/southern_company_gas/1minute-kitchen
+
+
 AUTHENTICATION
 --------------
 The author is normally SSO-protected. Supply a current authenticated browser session
@@ -130,5 +166,5 @@ STORAGE AND SAFETY
 ------------------
 Raw responses are plaintext authored content and belong only in the private repository.
 The public repository receives encrypted freeforms.json and analysis.json, never
-build/raw/, update_site.py, sites.json, or build.py. A failed query leaves the previous
-five-file site batch in place.
+build/raw/, either updater, sites.json, or build.py. A failed query leaves the previous
+five-file page or XF batch in place.
