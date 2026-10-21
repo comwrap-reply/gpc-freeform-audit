@@ -35,6 +35,17 @@ Style patterns and Selectors retain the CSS categories, risk filters, and instan
 drill-down across all imported types. Categories and source lenses default to all
 CSS rather than spacing only. XF and Pages tabs remain available for browsing.
 
+Component labels use the same colors across sites and views: Freeform is teal,
+Content card blue, Hero banner violet, Text over image amber, and Thumbnail with
+text pink. Labels always include the component name.
+
+In **Pages**, use **Component** to select a type. The page list shows pages with
+that type, with counts and color labels; the source viewer shows only components
+of that type. Search, styled, spacing, and flagged/noted filters combine with the
+type filter, requiring a component to meet the selected conditions. The selection
+is saved separately for each site. **All types** restores the complete view, and
+source links clear incompatible filters so their target remains visible.
+
 ## Third-party services
 
 Open **Third-party services** to identify services such as YouTube, Vimeo, Formstack,

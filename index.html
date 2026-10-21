@@ -130,6 +130,16 @@ mark.q{background:transparent;color:inherit;box-shadow:inset 0 0 0 1px var(--tea
 .b.block{background:var(--violet-bg);color:var(--violet)}
 .b.sp{background:var(--amber-bg);color:var(--amber)}
 .b.ff{background:rgba(77,214,193,.12);color:var(--teal)}
+/* Component identity: keep the text label alongside its consistent colour. */
+.b.component-type{display:inline-block;background:rgba(255,255,255,.06);color:var(--dim);border:1px solid currentColor;font-weight:600;line-height:1.5}
+.b.component-type[data-type=freeform]{color:var(--teal);background:rgba(77,214,193,.1)}
+.b.component-type[data-type=contentcard]{color:#6ea8ff;background:rgba(110,168,255,.1)}
+.b.component-type[data-type=herobanner]{color:var(--violet);background:var(--violet-bg)}
+.b.component-type[data-type=textoverimage]{color:var(--amber);background:var(--amber-bg)}
+.b.component-type[data-type=thumbnailwithtext]{color:#ff9ecb;background:rgba(255,158,203,.1)}
+.component-open:has(.component-type){text-decoration:none}
+.component-open:hover .component-type{text-decoration:underline}
+.page-type-filter{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
 /* category badge + dot, coloured from the palette via a data attribute */
 .b.cat{background:rgba(255,255,255,.06)}
 .b.cat[data-cat=spacing]{color:var(--c-spacing)}.b.cat[data-cat=layout]{color:var(--c-layout)}
@@ -434,14 +444,15 @@ mark.js,.b.js{background:#f4cc6626;color:#d49b17}mark.hook,.b.hook{background:#7
   <section class="pane" id="pane-gp">
     <div class="toolbar">
       <input type="search" id="q-gp" placeholder="search page paths… e.g. /secure/, outage, archive">
+      <label class="page-type-filter">Component <select id="gp-type"><option value="all">All types</option></select></label>
       <button class="chip" id="f-gpstyled">styled only</button>
       <button class="chip" id="f-gpsp">spacing only</button>
       <button class="chip" id="f-gpfl">flagged / noted</button>
-      <span class="hint" id="h-gp"></span>
+      <span class="hint" id="h-gp" aria-live="polite"></span>
     </div>
     <div class="split">
       <div class="flist" id="gplist"></div>
-      <div class="viewer" id="gpviewer"><div class="empty"><b>No page selected</b>Pick a page on the left to see every freeform it contains.</div></div>
+      <div class="viewer" id="gpviewer"><div class="empty"><b>No page selected</b>Pick a page on the left to inspect its components.</div></div>
     </div>
   </section>
 
@@ -1658,6 +1669,17 @@ const has = p => Object.prototype.hasOwnProperty.call(ITEMS, p);
 const live = paths => (paths||[]).filter(has);
 
 const fieldsOf = it => it.fields || {text:it.text || ''};
+const TYPE_LABEL = {freeform:'Freeform',contentcard:'Content card',herobanner:'Hero banner',textoverimage:'Text over image',thumbnailwithtext:'Thumbnail with text'};
+const typeOf = it => it.componentType || 'freeform';
+function componentBadge(it, count){
+  const type=typeOf(it);
+  return `<span class="b component-type" data-type="${esc(type)}">${esc(TYPE_LABEL[type]||type)}${count==null?'':` · ${count}`}</span>`;
+}
+function componentTypeBadges(paths){
+  const counts=new Map();
+  for(const p of paths){const type=typeOf(ITEMS[p]);counts.set(type,(counts.get(type)||0)+1);}
+  return [...counts].sort(([a],[b])=>a.localeCompare(b)).map(([componentType,count])=>componentBadge({componentType},count)).join('');
+}
 
 /* CSS-property taxonomy — mirrors build.py's categorize()/risk_tags() exactly.
    Selectors ship their categories from the build, but pattern rows are
@@ -2083,6 +2105,7 @@ function icard(path, needle){
   }
   return `<div class="icard${isFlagged(path)?' flagged':''}">
     <div class="name">${esc(name)}${tag}</div>
+    <div class="badges">${componentBadge(it)}</div>
     <div class="path">${esc(path)}</div>
     <div class="links">
       <a href="${authorLink(path)}" target="_blank" rel="noopener">Open in editor ↗</a>
@@ -2329,6 +2352,7 @@ function renderFragList(){
     b.innerHTML=`<span class="fmark">${isFlagged(p)?'⚑ ':''}${hasNote(p)?'<span class="nmark">✎</span>':''}</span>
       <span class="fam">${esc(famOf(p))}</span><div class="nm">${esc(fragName(p))}</div>
       <div class="badges">
+        ${componentBadge(ITEMS[p])}
         ${f.nAttrs?`<span class="b attr">${f.nAttrs} attr</span>`:''}
         ${f.nBlocks?`<span class="b block">${f.nBlocks} block</span>`:''}
         ${catBadges(f)}
@@ -2346,6 +2370,7 @@ function selectFrag(path, scroll){
   document.getElementById('viewer').innerHTML=`
     <div class="vhead">
       <div class="name">${esc(fragName(path))}</div>
+      <div class="badges">${componentBadge(it)}</div>
       <div class="path mono" style="color:var(--dim);margin-top:2px">${esc(path)}</div>
       <div class="links">
         <a href="${authorLink(path)}" target="_blank" rel="noopener">Open in editor ↗</a>
@@ -2372,34 +2397,42 @@ renderFragList();
 
 /* ---------- GP pages ---------- */
 let curGP=null, lensGP='', gpShown=200;
-const gpFilters={q:'',styled:false,sp:false,fl:false};
-function gpMatches(){
-  return GP_PAGES.filter(pg=>{
-    if(gpFilters.styled && !pg.paths.some(p=>facts(p).styled)) return false;
-    if(gpFilters.sp && !pg.paths.some(p=>facts(p).sp)) return false;
-    if(gpFilters.fl && !pg.paths.some(p=>isFlagged(p)||hasNote(p))) return false;
-    if(gpFilters.q && !pg.page.toLowerCase().includes(gpFilters.q)) return false;
-    return true;
-  });
+const gpFilters={q:'',type:'all',styled:false,sp:false,fl:false};
+const gpTypeSelect=document.getElementById('gp-type');
+for(const type of [...new Set(GP_PATHS.map(p=>typeOf(ITEMS[p])))].sort()){
+  const opt=document.createElement('option');opt.value=type;opt.textContent=TYPE_LABEL[type]||type;gpTypeSelect.appendChild(opt);
 }
+const gpTypePaths = pg => pg.paths.filter(p=>gpFilters.type==='all'||typeOf(ITEMS[p])===gpFilters.type);
+function gpPageMatches(pg){
+  if(gpFilters.q && !pg.page.toLowerCase().includes(gpFilters.q)) return false;
+  const paths=gpTypePaths(pg);
+  return paths.some(p=>(!gpFilters.styled||facts(p).styled)
+    && (!gpFilters.sp||facts(p).sp) && (!gpFilters.fl||isFlagged(p)||hasNote(p)));
+}
+const gpMatches = () => GP_PAGES.filter(gpPageMatches);
 function renderGPList(){
   const el=document.getElementById('gplist'); if(!el) return;
   const matches=gpMatches();
+  if(curGP && !matches.some(pg=>pg.page===curGP)){
+    curGP=null;
+    document.getElementById('gpviewer').innerHTML='<div class="empty"><b>No page selected</b>Pick a matching page on the left to inspect its components.</div>';
+  }
   el.innerHTML='';
   matches.slice(0,gpShown).forEach(pg=>{
-    const nSty=pg.paths.filter(p=>facts(p).styled).length;
-    const nSp=pg.paths.filter(p=>facts(p).sp).length;
-    const anyFlag=pg.paths.some(isFlagged);
-    const anyNote=pg.paths.some(hasNote);
+    const paths=gpTypePaths(pg);
+    const nSty=paths.filter(p=>facts(p).styled).length;
+    const nSp=paths.filter(p=>facts(p).sp).length;
+    const anyFlag=paths.some(isFlagged);
+    const anyNote=paths.some(hasNote);
     const b=document.createElement('button');
     b.className='fitem'+(pg.page===curGP?' on':'');
     b.innerHTML=`<span class="fmark">${anyFlag?'⚑ ':''}${anyNote?'<span class="nmark">✎</span>':''}</span>
       <div class="nm">${esc(shortPage(pg.page))}</div>
       <div class="badges">
-        <span class="b ff">${pg.paths.length} component${pg.paths.length>1?'s':''}</span>
+        <span class="b ff">${paths.length}${gpFilters.type==='all'?'':` of ${pg.paths.length}`} component${pg.paths.length>1?'s':''}</span>
         ${nSty?`<span class="b attr">${nSty} styled</span>`:''}
         ${nSp?`<span class="b sp">${nSp} spacing</span>`:''}
-      </div>`;
+      </div><div class="badges">${componentTypeBadges(paths)}</div>`;
     b.addEventListener('click',()=>selectGP(pg.page));
     el.appendChild(b);
   });
@@ -2415,6 +2448,15 @@ function renderGPList(){
 function selectGP(page, ffPath=null, scroll){
   const pg=GP_PAGES[GP_PAGE_AT[page]];
   if(!pg) return;
+  // A source link must reveal its target even when a saved filter excludes it.
+  if(ffPath && (!gpPageMatches(pg)||!gpTypePaths(pg).includes(ffPath))){
+    Object.assign(gpFilters,{q:'',type:'all',styled:false,sp:false,fl:false});
+    document.getElementById('q-gp').value='';gpTypeSelect.value='all';
+    for(const id of ['f-gpstyled','f-gpsp','f-gpfl'])document.getElementById(id).classList.remove('on');
+    gpShown=200;
+  }
+  if(!gpPageMatches(pg)) return;
+  const paths=gpTypePaths(pg);
   curGP=page; renderGPList();
   const v=document.getElementById('gpviewer');
   v.innerHTML=`
@@ -2428,15 +2470,16 @@ function selectGP(page, ffPath=null, scroll){
     </div>
     <div class="vtools">
       ${lensSelect('lensGP', lensGP)}
-      <span class="hint">${pg.paths.length} component${pg.paths.length>1?'s':''} on this page</span>
+      <span class="hint">${paths.length}${gpFilters.type==='all'?'':` of ${pg.paths.length}`} component${pg.paths.length>1?'s':''} on this page${gpFilters.type==='all'?'':` · ${esc(TYPE_LABEL[gpFilters.type]||gpFilters.type)}`}</span>
     </div>
-    <div id="gpsrcwrap" class="${lensClass(lensGP)}">${pg.paths.map(p=>{
+    <div id="gpsrcwrap" class="${lensClass(lensGP)}">${paths.map(p=>{
       const f=facts(p), t=ITEMS[p].text;
       return `<div class="ffsec" data-ffpath="${esc(p)}">
         <div class="ffhead">
           <div>
             <div class="cpath">${esc(p.split('/jcr:content/')[1]||p)}</div>
             <div class="badges" style="margin-top:4px">
+              ${componentBadge(ITEMS[p])}
               ${f.nAttrs?`<span class="b attr">${f.nAttrs} attr</span>`:''}
               ${f.nBlocks?`<span class="b block">${f.nBlocks} block</span>`:''}
               ${catBadges(f)}
@@ -2463,6 +2506,11 @@ function selectGP(page, ffPath=null, scroll){
   else if(scroll) v.scrollIntoView({block:'start'});
 }
 document.getElementById('q-gp').addEventListener('input',e=>{gpFilters.q=e.target.value.toLowerCase().trim();gpShown=200;renderGPList();});
+gpTypeSelect.addEventListener('change',e=>{
+  gpFilters.type=e.target.value;gpShown=200;renderGPList();
+  if(curGP)selectGP(curGP);
+  saveUI();
+});
 for(const [id,key] of [['f-gpstyled','styled'],['f-gpsp','sp'],['f-gpfl','fl']]){
   document.getElementById(id).addEventListener('click',e=>{
     gpFilters[key]=!gpFilters[key]; e.target.classList.toggle('on',gpFilters[key]); gpShown=200; renderGPList();
@@ -2485,6 +2533,7 @@ function renderFlagTab(){
   el.innerHTML=items.map(([p,v])=>`
     <div class="icard${v.flag?' flagged':''}">
       <div class="name">${esc(annName(p))} ${!v.flag?'<span class="nmark">✎ note only</span>':''}</div>
+      <div class="badges">${componentBadge(ITEMS[p])}</div>
       <div class="path">${esc(p)}</div>
       <div class="links">
         <a href="${authorLink(p)}" target="_blank" rel="noopener">Open in editor ↗</a>
@@ -2521,6 +2570,7 @@ function renderLegacyTab(){
       : `<div class="trunc">No snapshot — this annotation predates snapshots, so only the note survives.</div>`;
     return `<div class="icard legacy${v.flag?' flagged':''}">
       <div class="name">${esc(label)} ${!v.flag?'<span class="nmark">✎ note only</span>':''}</div>
+      ${s?`<div class="badges">${componentBadge(s)}</div>`:''}
       <div class="path">${esc(p)}</div>
       <div class="links">
         <span class="seen">last seen ${esc((s&&s.seen)||'unknown')}</span>
@@ -2546,7 +2596,6 @@ document.addEventListener('click', async e=>{
   }catch(err){ setStatus('clipboard blocked by the browser — select the source below manually'); }
 });
 /* ---------- component review: bounded list and on-demand source ---------- */
-const TYPE_LABEL = {freeform:'Freeform',contentcard:'Content card',herobanner:'Hero banner',textoverimage:'Text over image',thumbnailwithtext:'Thumbnail with text'};
 const COMPONENT_PATHS = Object.keys(ITEMS).sort();
 const compFilters = {q:'',type:'all',scope:'all',signal:'all',showAll:false};
 let compPage = 0, curComponent = null, evidenceLimit = 50;
@@ -2574,7 +2623,7 @@ function renderComponents() {
   document.getElementById('component-next').disabled=compPage>=pages-1;
   document.getElementById('component-rows').innerHTML=matches.slice(compPage*COMP_SIZE,(compPage+1)*COMP_SIZE).map(p=>{
     const it=ITEMS[p];
-    return `<tr><td><button class="component-open" data-component="${esc(p)}">${esc(TYPE_LABEL[it.componentType||'freeform']||it.componentType)}</button><div class="path">${esc(p)}</div></td><td>${it.scope==='xf'?'XF':'Page'}</td><td><div class="badges">${signalBadges(facts(p))||'<span class="hint">No signals</span>'}</div></td><td>${flagBtn(p)} ${noteBtn(p)}</td></tr>`;
+    return `<tr><td><button class="component-open" data-component="${esc(p)}">${componentBadge(it)}</button><div class="path">${esc(p)}</div></td><td>${it.scope==='xf'?'XF':'Page'}</td><td><div class="badges">${signalBadges(facts(p))||'<span class="hint">No signals</span>'}</div></td><td>${flagBtn(p)} ${noteBtn(p)}</td></tr>`;
   }).join('') || '<tr><td colspan="4" class="empty">No components match. Adjust filters or show all components.</td></tr>';
   // A selected item remains inspectable even when filters hide its list row.
 }
@@ -2591,7 +2640,7 @@ function selectComponent(p, reset=true) {
   const shown=findings.slice(0,evidenceLimit);
   document.getElementById('component-detail').innerHTML=`<div class="vhead">
     <h2>${esc(TYPE_LABEL[it.componentType||'freeform']||it.componentType)}</h2><div class="path">${esc(p)}</div>
-    <div class="badges">${signalBadges(f)}</div>
+    <div class="badges">${componentBadge(it)}${signalBadges(f)}</div>
     <div class="links"><a href="${esc(authorLink(p))}" target="_blank" rel="noopener">Open in editor ↗</a><a href="${esc(crxLink(p))}" target="_blank" rel="noopener">CRXDE ↗</a>${flagBtn(p)} ${noteBtn(p)}</div>${noteSlot(p)}</div>
     <p class="hint">${findings.length} findings. Class, ID, and data attributes are hooks for review; they do not prove custom CSS or JavaScript runs.</p>
     ${shown.map(x=>`<div class="evidence"><b>${esc(x.field)} · ${esc(x.label.length>160?x.label.slice(0,160)+'…':x.label)}</b><pre class="snip">${evidenceMarkup(fields[x.field]||'',x)}</pre></div>`).join('')||'<p class="empty">No CSS, JavaScript, or attribute hooks found.</p>'}
@@ -3070,6 +3119,8 @@ window.addEventListener('beforeunload', ()=>{ try{ localStorage.setItem(UI_KEY, 
   document.getElementById('f-fragfl').classList.toggle('on',!!fragFilters.fl);
   document.getElementById('q-gp').value = s.gpQ||'';
   Object.assign(gpFilters, s.gp||{}, {q:(s.gpQ||'').toLowerCase().trim()});
+  if(![...gpTypeSelect.options].some(opt=>opt.value===gpFilters.type))gpFilters.type='all';
+  gpTypeSelect.value=gpFilters.type;
   document.getElementById('f-gpstyled').classList.toggle('on',!!gpFilters.styled);
   document.getElementById('f-gpsp').classList.toggle('on',!!gpFilters.sp);
   document.getElementById('f-gpfl').classList.toggle('on',!!gpFilters.fl);
