@@ -213,7 +213,16 @@ data, and syncs it to the sibling public checkout:
 python3 update_site.py georgia-power --cookie-file /path/to/cookies.txt
 python3 update_site.py                         # interactive site menu
 python3 update_site.py alabama-power --print-urls
+python3 update_site.py --all --cookie-file /path/to/cookies.txt
 ```
+
+Use `--all` to refresh every website in `build/sites.json` (currently 14). The
+updater runs all 70 website/component queries sequentially, waits 5 seconds between
+every query, then rebuilds and syncs the encrypted data once. `--all --print-urls`
+previews the queries without fetching; `--no-build` and `--no-sync` also work with
+`--all`. A site id cannot be combined with `--all`. If a site fails, processing
+stops before rebuilding or syncing; completed sites retain their refreshed raw
+exports. Experience Fragments are refreshed separately using the command below.
 
 `cookies.txt` must use Netscape cookie-file format and come from an authenticated
 author session. As an alternative, set `AEM_COOKIE` to the browser's Cookie request

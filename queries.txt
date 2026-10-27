@@ -18,6 +18,8 @@ For example:
   python3 update_site.py georgia-power --cookie-file ~/Downloads/cookies.txt
   python3 update_site.py alabama-power --print-urls
   python3 update_site.py
+  python3 update_site.py --all --cookie-file ~/Downloads/cookies.txt
+  python3 update_site.py --all --print-urls
 
 Omit the site id for an interactive menu. The updater calls
 https://author.southerncompany.com, runs the five component queries in order, and
@@ -25,8 +27,15 @@ waits 5 seconds between requests. It validates all five responses before replaci
 build/raw/<site-id>/, rebuilds freeforms.json and analysis.json, and copies those two
 encrypted files to the sibling gpc-freeform-audit checkout.
 
+Use --all instead of a site id to refresh all websites in build/sites.json
+(currently 14). This runs 70 website/component queries sequentially with 69
+five-second gaps, then rebuilds and syncs once after all sites succeed. If a site
+fails, processing stops without rebuilding or syncing; completed sites keep their
+refreshed raw exports. Experience Fragments use the separate updater below.
+
 Use --no-build to fetch only, --no-sync to rebuild only the private checkout, or
---delay N to override the 5-second interval. --print-urls performs no requests.
+--delay N to override the 5-second interval. These options also work with --all.
+--print-urls performs no requests, authentication, or writes.
 
 
 EXPERIENCE FRAGMENT REFRESH
