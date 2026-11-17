@@ -9,7 +9,8 @@ this is not a change-history comparison or a live-page runtime audit.
 ## What is flagged
 
 - **CSS:** style attributes (single-, double-quoted, or unquoted), `<style>` blocks,
-  and stylesheet links. Ordinary rich-text styling counts.
+  and stylesheet links. The configured-formatting filter described below hides
+  narrowly recognized RTE styles from review counts.
 - **JavaScript:** executable inline scripts, external scripts, event handlers, and
   `javascript:` URLs. JSON-LD, JSON data, and import maps do not count as executable scripts.
 - **Attribute hooks:** nonempty `class` and `id` values and any `data-*` attribute.
@@ -38,6 +39,37 @@ CSS rather than spacing only. XF and Pages tabs remain available for browsing.
 Component labels use the same colors across sites and views: Freeform is teal,
 Content card blue, Hero banner violet, Text over image amber, and Thumbnail with
 text pink. Labels always include the component name.
+
+### Hide configured RTE inline styles
+
+**Hide configured inline styles** is on by default and saved separately for each
+site. It applies consistently to Components, CSS counts and filters, Style patterns,
+Trends and Excel exports, and the CSS lenses in Pages and XF. Turn it off to include
+all authored inline styles again. The status beside the checkbox shows the hidden
+declaration count; component details retain expandable evidence for those matches.
+
+Matching is deliberately narrow: `text-align: left`, `center`, or `right`
+on `p`, `h1`, `h2`, or `h3`, plus `text-align: justify` and positive `margin-left`
+values in whole 40px increments on `p` (40px, 80px, 120px, 160px, and so on). The
+justification and indent rules reflect author-observed RTE output. Rules apply in
+Content card `text`, Hero banner `description`, Text over image `text`, or Thumbnail
+with text `desc`. Indexed fields such as `description[0]` use the same rule. Matching
+normalizes CSS case, surrounding whitespace, and a trailing semicolon. Freeform is
+a plain HTML textarea, so its styles always remain visible. In a mixed attribute,
+recognized alignment and indentation are hidden while other declarations remain
+reviewable. Conflicting alignment/indent values, `!important`, zero/negative indents,
+other indent sizes or units, and uncertain or invalid declarations remain visible.
+
+This identifies formatting that matches Southern Global's configured RTE options;
+it cannot prove whether someone used the toolbar or typed the same HTML manually.
+The configured Styles dropdown uses CSS classes and does not justify hiding arbitrary
+font, color, margin, or sizing declarations. Dialog settings that style component
+wrappers are outside this audit of stored content fields.
+
+Full source and original source fragments remain unchanged. The checkbox does not
+hide `<style>` blocks, stylesheet links, JavaScript, attribute hooks, third-party
+services, flags, or notes. Existing and missing analysis files are recomputed with
+the same rules when needed. No AEM content is modified.
 
 In **Pages**, use **Component** to select a type. The page list shows pages with
 that type, with counts and color labels; the source viewer shows only components
@@ -71,7 +103,7 @@ the deployed data files.
 ## Trends filtering and Excel reports
 
 Open **Trends → Inline styles** to find shared combinations. The first visit starts
-at the largest exported combination (currently **12 styles together**) and
+at the largest available combination after the configured-style filter and
 **Minimum components = 2**. Choose any size, including 1 for individual declarations,
 or use **Next smaller size**. Matching includes ordered, nonadjacent declarations
 inside larger style attributes. It never includes CSS inside `<style>` blocks.
@@ -112,6 +144,8 @@ identities stay intact.
 
 Export time and active filters appear above each Details table. The Matching trends
 totals row and Reading this workbook row are omitted. Headers are frozen, column filters are enabled, and CSS is wrapped.
+Active filters include whether configured RTE inline styles were hidden at export
+time, so an exported workbook records the review scope used to produce it.
 Details use each occurrence's
 own declarations and comments; Original source fragment retains the authored opening
 tag or full style block. Nothing is merged, deduplicated, simplified or executed.
@@ -258,6 +292,10 @@ does not serve credentials or write test notes to your normal browser profile.
 `node build/test_services_browser.cjs` runs focused service-tab checks against the
 same local preview, including filters, site isolation, escaped evidence and older
 analysis fallback.
+`node build/test_configured_styles_browser.cjs` uses isolated encrypted fixtures to
+check configured-style filtering, unchanged source, per-site persistence, older and
+missing analysis, and the filter recorded in Excel exports. Run it after a full
+rebuild so the served app includes the current analyzer and UI.
 
 Use `--input raw/` for the complete audit or point at one export while developing.
 Add new type-to-property mappings in `build.py`, `update_site.py`, and
