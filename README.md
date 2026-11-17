@@ -57,7 +57,7 @@ included or excluded. Excel exports record both choices and retain original clas
 and source fragments regardless of the filter settings.
 
 Matching is deliberately narrow: `text-align: left`, `center`, or `right`
-on `p`, `h1`, `h2`, or `h3`, plus `text-align: justify` and positive `margin-left`
+on `p`, `h1`, `h2`, `h3`, or list items (`li`), plus `text-align: justify` and positive `margin-left`
 values in whole 40px increments on `p` (40px, 80px, 120px, 160px, and so on). The
 justification and indent rules reflect author-observed RTE output. Rules apply in
 Content card `text`, Hero banner `description`, Text over image `text`, or Thumbnail
