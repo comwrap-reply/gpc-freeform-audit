@@ -42,12 +42,12 @@ text pink. Labels always include the component name.
 
 ### Include RTE formatting
 
-Two independent checkboxes control whether configured RTE formatting is included
-in the audit:
+Two independent checkboxes beside **Show all components** in the Components tab
+control whether configured RTE formatting is included across all audit views:
 
-- **Include RTE inline styles** includes matching alignment and paragraph indentation
+- **Include RTE styles** includes matching alignment and paragraph indentation
   in CSS findings, counts, Style patterns, Trends, Excel results, and source highlighting.
-- **Include RTE inline classes** includes matching Styles menu classes in hook
+- **Include RTE classes** includes matching Styles menu classes in hook
   findings, counts, and source highlighting. It does not change CSS matches.
 
 Both are unchecked by default to focus review on custom formatting. Each choice is

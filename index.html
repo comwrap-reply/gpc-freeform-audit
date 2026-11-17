@@ -35,9 +35,6 @@ h1 .accent{color:var(--amber)}
 .sitebar label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
 .sitebar select{min-width:260px;background:var(--panel);font-weight:600}
 .sitebar .hint{padding-bottom:8px}
-.sitebar.configured-style-control{align-items:center}
-.sitebar label.toggle{flex-direction:row;align-items:center;text-transform:none;letter-spacing:normal;font-size:12px}
-.configured-style-control .hint{padding-bottom:0}
 .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .dot{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -236,6 +233,8 @@ mark.q{background:transparent;color:inherit;box-shadow:inset 0 0 0 1px var(--tea
 body.locked main,body.locked header,body.locked nav{visibility:hidden}
 
 .component-toolbar{flex-wrap:wrap;align-items:end}.component-toolbar label{display:flex;flex-direction:column;gap:5px;font-size:12px}.component-toolbar .toggle{flex-direction:row;align-items:center;padding:8px}
+.component-toggles{display:flex;flex-wrap:wrap;align-items:center;gap:4px;max-width:100%}
+.configured-style-note{display:flex;flex-wrap:wrap;gap:6px 16px;margin:-4px 0 14px}
 .component-toolbar select{background:var(--bg);color:var(--text);border:1px solid var(--line);padding:8px;border-radius:5px}
 .component-table{overflow:auto;max-height:540px}.component-table table{width:100%;table-layout:fixed}.component-table th{position:static}.component-table th:first-child{width:48%}.component-table th:last-child{width:20%}.component-table .path{overflow-wrap:anywhere;white-space:normal;font-size:11px;margin-top:6px}
 .component-open{background:none;border:0;color:var(--coral);cursor:pointer;font:inherit;text-align:left;text-decoration:underline;padding:0}
@@ -306,12 +305,6 @@ mark.js,.b.js{background:#f4cc6626;color:#d49b17}mark.hook,.b.hook{background:#7
   <h1>Component <span class="accent">Code Audit</span></h1>
   <p class="sub">Find authored CSS, JavaScript, and attribute hooks across Southern Company sites. Choose a site to inspect its current export, open findings on author, and save flags and notes for review.</p>
   <div class="sitebar"><label>Site<select id="site-select" aria-label="Site"></select></label><span class="hint" id="site-status"></span></div>
-  <div class="sitebar configured-style-control">
-    <label class="toggle"><input type="checkbox" id="include-rte-inline-styles" aria-describedby="configured-style-help configured-style-status">Include RTE inline styles</label>
-    <label class="toggle"><input type="checkbox" id="include-rte-inline-classes" aria-describedby="configured-style-help configured-style-status">Include RTE inline classes</label>
-    <span class="hint" id="configured-style-status" role="status"></span>
-  </div>
-  <p class="hint" id="configured-style-help">Include matching RTE alignment and indentation, or Styles menu classes, independently. Leave both unchecked to focus on custom formatting. Matches do not prove whether Edit Source was used.</p>
   <div class="legend">
     <span><span class="dot" style="background:var(--coral)"></span> style="…" attribute</span>
     <span><span class="dot" style="background:var(--violet)"></span> &lt;style&gt; block</span>
@@ -345,8 +338,13 @@ mark.js,.b.js{background:#f4cc6626;color:#d49b17}mark.hook,.b.hook{background:#7
       <label>Component <select id="component-type"><option value="all">All types</option></select></label>
       <label>Scope <select id="component-scope"><option value="all">Pages + XF</option><option value="gp">Pages</option><option value="xf">XF</option></select></label>
       <label>Signal <select id="component-signal"><option value="all">Any signal</option><option value="css">CSS</option><option value="js">JavaScript</option><option value="hooks">Attribute hooks</option><option value="both">CSS + JavaScript</option></select></label>
-      <label class="toggle"><input type="checkbox" id="component-all">Show all components</label>
+      <div class="component-toggles">
+        <label class="toggle"><input type="checkbox" id="component-all">Show all components</label>
+        <label class="toggle"><input type="checkbox" id="include-rte-inline-styles" aria-describedby="configured-style-help configured-style-status">Include RTE styles</label>
+        <label class="toggle"><input type="checkbox" id="include-rte-inline-classes" aria-describedby="configured-style-help configured-style-status">Include RTE classes</label>
+      </div>
     </div>
+    <p class="hint configured-style-note"><span id="configured-style-status" role="status"></span><span id="configured-style-help">RTE filters apply across all views.</span></p>
     <div class="toolbar"><span class="hint" id="component-count" aria-live="polite"></span><button class="btn" id="component-prev">Previous</button><button class="btn" id="component-next">Next</button></div>
     <div class="component-table"><table><thead><tr><th>Component / node</th><th>Scope</th><th>Signals</th><th>Review</th></tr></thead><tbody id="component-rows"></tbody></table></div>
     <div id="component-detail" class="viewer"><p class="empty">Select a component to inspect its findings and full source.</p></div>
@@ -2275,7 +2273,7 @@ document.getElementById('catlegend').innerHTML = CATS.filter(c=>CAT_TOTALS[c]).m
   `<span><span class="dot" style="background:var(--c-${c})"></span> ${CAT_LABEL[c]} <span class="mono" style="color:var(--faint)">${CAT_TOTALS[c].toLocaleString()}</span></span>`).join('');
 const matched=Object.keys(ITEMS).reduce((n,p)=>n+(facts(p).configuredMatches||[]).length,0);
 const classes=Object.keys(ITEMS).reduce((n,p)=>n+(facts(p).configuredClassMatches||[]).length,0);
-document.getElementById('configured-style-status').textContent=`${matched.toLocaleString()} RTE declaration${matched===1?'':'s'} ${hideConfiguredInlineStyles?'excluded':'included'} · ${classes.toLocaleString()} RTE class occurrence${classes===1?'':'s'} ${hideConfiguredInlineClasses?'excluded':'included'} · selected site`;
+document.getElementById('configured-style-status').textContent=`${matched.toLocaleString()} style ${plural(matched,'match','matches')} ${hideConfiguredInlineStyles?'hidden':'shown'} · ${classes.toLocaleString()} class ${plural(classes,'match','matches')} ${hideConfiguredInlineClasses?'hidden':'shown'}`;
 }
 renderAuditStats();
 
