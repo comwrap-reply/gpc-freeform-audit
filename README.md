@@ -40,14 +40,21 @@ Component labels use the same colors across sites and views: Freeform is teal,
 Content card blue, Hero banner violet, Text over image amber, and Thumbnail with
 text pink. Labels always include the component name.
 
-### Hide configured RTE formatting
+### Include RTE formatting
 
-**Hide configured RTE formatting** is on by default and saved separately for each
-site. It applies to Components, CSS and hook counts and filters, Style patterns,
-Trends and Excel exports, and source highlighting in Pages and XF. Turn it off to
-include all authored inline styles and classes again. The status beside the checkbox
-shows hidden declaration and class occurrence counts; component details retain
-expandable evidence for those matches.
+Two independent checkboxes control whether configured RTE formatting is included
+in the audit:
+
+- **Include RTE inline styles** includes matching alignment and paragraph indentation
+  in CSS findings, counts, Style patterns, Trends, Excel results, and source highlighting.
+- **Include RTE inline classes** includes matching Styles menu classes in hook
+  findings, counts, and source highlighting. It does not change CSS matches.
+
+Both are unchecked by default to focus review on custom formatting. Each choice is
+saved separately per site. The previous combined filter preference carries over to
+both checkboxes. Status counts and expandable evidence show which matches are
+included or excluded. Excel exports record both choices and retain original classes
+and source fragments regardless of the filter settings.
 
 Matching is deliberately narrow: `text-align: left`, `center`, or `right`
 on `p`, `h1`, `h2`, or `h3`, plus `text-align: justify` and positive `margin-left`
@@ -72,9 +79,9 @@ The filter also recognizes these Styles menu classes on `span` elements:
 
 Class names must match exactly, including case, in the corresponding content field
 (including indexed fields). Other elements and component types remain flagged.
-In `class="semi-bold custom"` on a Content card span, only `custom` remains a hook
-finding and is highlighted. A component with only configured formatting drops out
-of the review list; **Show all components** still exposes its complete source.
+With RTE classes excluded, `class="semi-bold custom"` on a Content card span leaves
+only `custom` as a highlighted hook finding. A component with only excluded formatting
+drops out of the review list; **Show all components** still exposes its complete source.
 
 This identifies formatting that matches Southern Global's configured RTE options;
 it cannot prove whether someone used the toolbar or typed the same HTML manually.
@@ -82,7 +89,7 @@ Use the remaining findings as candidates for Edit Source review. Configured clas
 do not justify hiding arbitrary font, color, margin, or sizing declarations. Dialog
 settings that style component wrappers are outside this audit of stored content fields.
 
-Full source and original source fragments remain unchanged. The checkbox does not
+Full source and original source fragments remain unchanged. These controls do not
 hide `<style>` blocks, stylesheet links, JavaScript, custom classes, IDs, data
 attributes, third-party services, flags, or notes. Freeform always remains unfiltered.
 Existing and missing analysis files are recomputed with the same rules when needed.
@@ -310,8 +317,9 @@ does not serve credentials or write test notes to your normal browser profile.
 same local preview, including filters, site isolation, escaped evidence and older
 analysis fallback.
 `node build/test_configured_styles_browser.cjs` uses isolated encrypted fixtures to
-check configured-style filtering, unchanged source, per-site persistence, older and
-missing analysis, and the filter recorded in Excel exports. Run it after a full
+check all four style/class inclusion combinations, unchanged source, per-site
+persistence, migration of the old combined preference, older and missing analysis,
+and both choices recorded in Excel exports. Run it after a full
 rebuild so the served app includes the current analyzer and UI.
 
 Use `--input raw/` for the complete audit or point at one export while developing.
