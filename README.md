@@ -40,13 +40,14 @@ Component labels use the same colors across sites and views: Freeform is teal,
 Content card blue, Hero banner violet, Text over image amber, and Thumbnail with
 text pink. Labels always include the component name.
 
-### Hide configured RTE inline styles
+### Hide configured RTE formatting
 
-**Hide configured inline styles** is on by default and saved separately for each
-site. It applies consistently to Components, CSS counts and filters, Style patterns,
-Trends and Excel exports, and the CSS lenses in Pages and XF. Turn it off to include
-all authored inline styles again. The status beside the checkbox shows the hidden
-declaration count; component details retain expandable evidence for those matches.
+**Hide configured RTE formatting** is on by default and saved separately for each
+site. It applies to Components, CSS and hook counts and filters, Style patterns,
+Trends and Excel exports, and source highlighting in Pages and XF. Turn it off to
+include all authored inline styles and classes again. The status beside the checkbox
+shows hidden declaration and class occurrence counts; component details retain
+expandable evidence for those matches.
 
 Matching is deliberately narrow: `text-align: left`, `center`, or `right`
 on `p`, `h1`, `h2`, or `h3`, plus `text-align: justify` and positive `margin-left`
@@ -60,16 +61,32 @@ recognized alignment and indentation are hidden while other declarations remain
 reviewable. Conflicting alignment/indent values, `!important`, zero/negative indents,
 other indent sizes or units, and uncertain or invalid declarations remain visible.
 
+The filter also recognizes these Styles menu classes on `span` elements:
+
+| Component | Content field | Configured classes |
+| --- | --- | --- |
+| Content card | `text` | `semi-bold`, `teletype` |
+| Hero banner | `description` | `defaultSpan`, `lead`, `teletype` |
+| Text over image | `text` | `defaultSpan`, `lead`, `teletype` |
+| Thumbnail with text | `desc` | `defaultSpan`, `lead`, `teletype` |
+
+Class names must match exactly, including case, in the corresponding content field
+(including indexed fields). Other elements and component types remain flagged.
+In `class="semi-bold custom"` on a Content card span, only `custom` remains a hook
+finding and is highlighted. A component with only configured formatting drops out
+of the review list; **Show all components** still exposes its complete source.
+
 This identifies formatting that matches Southern Global's configured RTE options;
 it cannot prove whether someone used the toolbar or typed the same HTML manually.
-The configured Styles dropdown uses CSS classes and does not justify hiding arbitrary
-font, color, margin, or sizing declarations. Dialog settings that style component
-wrappers are outside this audit of stored content fields.
+Use the remaining findings as candidates for Edit Source review. Configured classes
+do not justify hiding arbitrary font, color, margin, or sizing declarations. Dialog
+settings that style component wrappers are outside this audit of stored content fields.
 
 Full source and original source fragments remain unchanged. The checkbox does not
-hide `<style>` blocks, stylesheet links, JavaScript, attribute hooks, third-party
-services, flags, or notes. Existing and missing analysis files are recomputed with
-the same rules when needed. No AEM content is modified.
+hide `<style>` blocks, stylesheet links, JavaScript, custom classes, IDs, data
+attributes, third-party services, flags, or notes. Freeform always remains unfiltered.
+Existing and missing analysis files are recomputed with the same rules when needed.
+No AEM content is modified.
 
 In **Pages**, use **Component** to select a type. The page list shows pages with
 that type, with counts and color labels; the source viewer shows only components
